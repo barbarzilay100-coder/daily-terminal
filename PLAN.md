@@ -6,7 +6,7 @@
 ## Current Status
 
 **Active phase:** Phase 3 — visual identity and presentation
-**Active task:** none open — top of the REVIEW.md queue is now P3, verifying METHODOLOGY.md against the code
+**Active task:** none open — the queue is down to two P4s, both cosmetic
 **Last updated:** 2026-07-26
 
 The app is feature-complete and live on GitHub Pages. The English migration and the
@@ -35,7 +35,6 @@ None set.
 
 ## Backlog
 
-- `docs/METHODOLOGY.md` was not re-read during the redesign. Its prose about levels is believed accurate but was not verified line by line.
 - The fundamentals row leaves whitespace under the narrow Verdict rail. Honest whitespace now rather than a stretched empty card, but a third item could fill it.
 
 ## Blockers & Open Questions
@@ -44,6 +43,7 @@ None.
 
 ## Session Log
 
+2026-07-26 | Verify METHODOLOGY.md against the code (REVIEW P3) | Done | Verified by: every threshold read from source and matched one by one; one error fixed (default view is 140 bars, not the 252 the score uses, so the two bases do not coincide); suite 157/157 | Next: only two cosmetic P4s remain
 2026-07-26 | Investigate the chart's blank left edge (REVIEW P3) | Partial | Verified by: clean loads at several viewports all hold 140 bars, a Playwright repro ruled out the zero-layout theory, and fixLeftEdge was tried and reverted after 2 assertions caught it dropping the newest bar | Next: item re-scoped and downgraded to P4 with the dead end recorded; no code change shipped
 2026-07-26 | Rename the stale "in Hebrew" test (REVIEW P2) | Done | Verified by: 157/157 green, repo-wide sweep for Hebrew characters returns nothing | Next: REVIEW P3, the chart's empty left half on a 5Y fit
 2026-07-26 | README: say the profile is drawn (REVIEW P1) | Done | Verified by: each claim checked against profileLevels/drawProfile in index.html; docs-only change, no code touched | Next: REVIEW P2, rename the test that still says "in Hebrew"

@@ -17,11 +17,11 @@ a portfolio piece that convinces a recruiter for junior finance roles in Israel.
 
   — Done when: the view stops running past the first bar on resize **without** altering which bar is last in view, suite green. Worth doing only if it is ever seen on a first impression rather than after a deliberate resize.
 
-- [ ] P3 — `docs/METHODOLOGY.md` unverified against the current code — It was not re-read during the redesign. The level maths did not change, so it is probably accurate, but "probably" is not the standard the rest of this project holds — Done when: every numeric claim in it is checked against `profileLevels()` and the constants, and any drift is corrected
-
 - [ ] P4 — Whitespace under the Verdict rail — The fundamentals row now has a narrow left rail that ends well above its neighbours. Better than the stretched empty card it replaced, but still unfinished-looking — Done when: either a third fact fills the rail or the row is rebalanced, without reintroducing dead space elsewhere
 
 ## Done
+
+- [x] P3 — `docs/METHODOLOGY.md` unverified against the current code — 26 Jul 2026. Every numeric and factual claim checked against `index.html`: 120 bins, 1.5% separation, mean-bin threshold, first/last bin eligible, 5 trading days, RSI 50–70, 3% room, 2:1, 252-bar profile window, 252/504 percentile windows, 30/200-day staleness, 1% reconciliation gap, the four SIC ranges, the one-hour live cache, eleven live requests, 25 look-ahead samples, and white markers on the EMA 21 series — all correct. **One error found and fixed:** it claimed the default view and the score's profile window coincide at "the default one-year view". The opening view is `INITIAL_BARS = 140`, the score uses `PROFILE_LOOKBACK = 252`, so they do not. Also added the histogram's display and up/down split to the levels section, noting the split feeds only the drawing. Verified by: constants read directly from source; suite still 157/157.
 
 - [x] P2 — Stale test name from the English migration — 26 Jul 2026. Renamed to "the out-of-bucket sector is spelled out with its reason, not printed as the raw token 'other'", which is what the assertion actually checks. Verified by: 157/157 green, and a sweep for Hebrew characters across every md/js/cjs/html/yml file in the repo now returns nothing.
 

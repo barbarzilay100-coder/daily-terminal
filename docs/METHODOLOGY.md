@@ -35,6 +35,13 @@ volume changed hands, which is what makes it likely to matter again.
    them silently dropped an accumulation band that happened to sit at the extreme of the range.
 4. The two nearest levels above the reference price are resistance; the nearest below is support.
 
+The histogram from step 2 is drawn beside the price axis rather than discarded once the peaks
+have been read off it, so a level can be checked against the shape it came from. Each bin is
+split into the volume that arrived on bars closing above the previous close and the volume that
+arrived on bars closing below it — the same up/down rule the volume pane uses. That split feeds
+only the drawing. The peak-finding in step 3 runs on the combined histogram, so which prices
+become levels does not depend on it.
+
 **Deliberately empty states.** If no accumulation band sits below the price, meaning the asset
 has fallen through all of them, there is no support level and the panel says exactly that. The same
 applies above. A fabricated level is worse than an absent one.
@@ -169,8 +176,10 @@ match. A single sample can agree by coincidence; the point of the check is that 
 agree twenty-five times by coincidence.
 
 **The score does not move when you zoom.** It always uses a fixed 252-bar profile window, so it
-is stable. The blue lines on the chart *do* follow the view. At the default one-year view the two
-bases coincide.
+is stable. The blue lines on the chart *do* follow the view, and the two bases are not the same:
+the opening view is 140 bars, chosen for legibility because 252 candles across one screen are
+about two pixels wide each. So the levels drawn on a freshly loaded chart are built on a shorter
+window than the one the score used, and zooming out to roughly a year is what makes them agree.
 
 ### Limitations of the percentile
 
