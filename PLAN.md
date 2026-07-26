@@ -6,7 +6,7 @@
 ## Current Status
 
 **Active phase:** Phase 3 — visual identity and presentation
-**Active task:** none open — pick the top REVIEW.md item
+**Active task:** none open — top of the REVIEW.md queue is now P2, the stale test name
 **Last updated:** 2026-07-26
 
 The app is feature-complete and live on GitHub Pages. The English migration and the
@@ -27,7 +27,7 @@ locally and in CI. What remains is presentation polish and the review queue.
 - [x] Draw the volume-profile histogram the levels are derived from — Done when: it renders docked to the price scale, clears when there is no profile, and the golden run is unchanged
 - [x] Split the profile into up-day and down-day volume — Done when: `histUp` never exceeds `hist`, both sides carry volume, `hist` untouched
 - [x] Regenerate the README screenshots at 2x — Done when: both match the original dimensions and show the current design
-- [ ] Say in the README that the profile is now drawn — Done when: the "support and resistance" paragraph mentions the histogram, and the alt text matches the new image
+- [x] Say in the README that the profile is now drawn — Done when: the "support and resistance" paragraph mentions the histogram, and the alt text matches the new image
 
 ## Deadlines
 
@@ -46,6 +46,7 @@ None.
 
 ## Session Log
 
+2026-07-26 | README: say the profile is drawn (REVIEW P1) | Done | Verified by: each claim checked against profileLevels/drawProfile in index.html; docs-only change, no code touched | Next: REVIEW P2, rename the test that still says "in Hebrew"
 2026-07-26 | Market-profile redesign + English migration follow-up | Done | Verified by: 157/157 e2e locally and in CI, GitHub Pages deploy green, screenshots regenerated and visually checked | Next: mention the drawn profile in the README
 
 ## Update Instructions for Claude Code

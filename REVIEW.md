@@ -11,8 +11,6 @@ a portfolio piece that convinces a recruiter for junior finance roles in Israel.
 
 ## Queue (ordered by priority)
 
-- [ ] P1 — README does not mention the drawn profile — The histogram is now the most distinctive thing on the page and the README still describes only two numbers and a blue line. The feature that separates this from any charting page is invisible in the text a recruiter reads first — Done when: the support/resistance paragraph says the histogram is drawn and price-aligned, and the hero image alt text describes it
-
 - [ ] P2 — Stale test name from the English migration — `tests/e2e.cjs` still names an assertion "the out-of-bucket sector is stated in Hebrew". The assertion is correct; only the name rotted. Anyone reading the suite as a work sample sees an inconsistency — Done when: the name matches what it checks and the suite is still green
 
 - [ ] P3 — The chart wastes the left half of its width on a 5Y fit — Confirmed pre-existing, not a redesign regression: loading the pre-redesign `main` side by side showed the identical gap. Still the first thing a visitor sees — Done when: a full fit either fills the width or the default view is narrowed to one that does, with the suite still green
@@ -23,4 +21,4 @@ a portfolio piece that convinces a recruiter for junior finance roles in Israel.
 
 ## Done
 
-<!-- Move completed items here, newest on top, with: date + verified by -->
+- [x] P1 — README does not mention the drawn profile — 26 Jul 2026. Added a "The histogram is shown, not just used" paragraph covering price alignment, the green/red split by day direction, and that it follows the visible range; rewrote both image alt texts. Verified by: every claim checked against `profileLevels()` and `drawProfile()` in `index.html` — the split rule matches `up = !(j > 0 && b.c < bars[j-1].c)`, and the follows-the-view claim matches `renderLevels()` being driven by the visible-range subscription.

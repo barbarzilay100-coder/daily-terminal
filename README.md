@@ -10,13 +10,13 @@ drawn by eye.
 
 No sign-up and no API key. It is one HTML file and it fetches its own data.
 
-![The terminal on ORCL: candles with the moving-average ribbon, volume-profile levels in blue, volume and RSI in their own panes](docs/screenshot.png)
+![The terminal on ORCL: candles with the moving-average ribbon, the volume-by-price histogram docked to the price axis in green and red, the levels it produced drawn across the chart in blue, and volume and RSI in their own panes](docs/screenshot.png)
 
 Type a ticker and you get the chart with a fixed indicator set, deterministic support and
 resistance derived from the volume-by-price histogram, a graded assessment of the current bar
 against a defined checklist, and the company's GARP scorecard beside it.
 
-![The panels below the chart: the graded checklist with its percentile, the volume-profile levels, and the GARP scorecard with the price reconciliation](docs/screenshot-panels.png)
+![The panels below the chart: the graded checklist with its percentile, the volume-profile levels on one line with the empty-state sentence beside them, and the GARP scorecard with the price reconciliation](docs/screenshot-panels.png)
 
 Companion to [equity-research-terminal](https://github.com/barbarzilay100-coder/equity-research-terminal),
 which supplies the fundamental layer. That project answers *whether a business is worth owning*;
@@ -35,10 +35,19 @@ TradingView's open-source library, over price data the page computes indicators 
 **Support and resistance from volume, not eyeballing.** Each day's volume is spread uniformly
 across that day's high-low range, building a volume-by-price histogram. Levels are local peaks
 of that histogram: the two nearest above the price are resistance, the nearest below is support.
-They are drawn on the chart in blue and listed with their distance from the price. When price
-sits below every accumulation zone there is no support level, and the panel says so rather than
-inventing one. Same when the window carries no volume at all, which is the case where a mean of
-zero would otherwise let every bin qualify as a level.
+They are drawn on the chart in blue and listed with their distance from the price.
+
+**The histogram is shown, not just used.** It sits against the price axis, so a bulge is at the
+same height as the line it produced and a level can be read as the shape it came from rather than
+taken on trust. Each bar is split by the direction of the day that supplied the volume — green
+where that day closed above the one before it, red where it closed below — so the balance at a
+level is visible too, and price sitting under the whole accumulation mass is something you see
+rather than something the panel has to tell you. It is computed over whatever range is in view,
+so it moves when you zoom, exactly as the levels do.
+
+When price sits below every accumulation zone there is no support level, and the panel says so
+rather than inventing one. Same when the window carries no volume at all, which is the case
+where a mean of zero would otherwise let every bin qualify as a level.
 
 **Entry and exit triggers.** An EMA 9 / EMA 21 cross, marked on the ribbon at the crossing
 point. Long triggers only count while SMA 50 sits above SMA 100. The slow pair is a regime gate
