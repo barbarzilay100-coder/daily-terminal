@@ -7,50 +7,74 @@
 <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"
         integrity="sha384-q1KYLSKHgBnW5tWYGGR8+6YV4/iPy31dILoF2I1OD7XiVUvHEp/TaxIQVmB0j3R2"
         crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..112,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet">
 <style>
   :root{
-    --bg:#0d1117; --panel:#151b23; --line:#262d38; --line2:#30363d;
-    --ink:#e6edf3; --dim:#8b949e; --acc:#58a6ff;
-    --ma9:#00c853; --ma21:#f6c309; --ma50:#fb9800; --ma100:#f60c0c;
-    --up:#26a69a; --down:#ef5350;
-    --level:#2962ff;   /* support & resistance share one colour */
+    --bg:#0a0c0f; --panel:#12151a; --line:#212731; --line2:#2b323d;
+    --ink:#e9e5dc; --dim:#79838f; --acc:#e3bc55;
+
+    /* The volume-profile ramp. Four steps of one hue, standing for how much volume
+       traded at a price — the brightest step is the heaviest bin. Colour carries a
+       number here, so nothing else on the page is allowed to be this loud. */
+    --vp-10:#2e2a1c; --vp-40:#5e5028; --vp-70:#9c8235; --vp-100:#e3bc55;
+
+    /* Same four hues the README names, held back so they sit under the ramp
+       rather than shouting over it. Fast to slow still reads green -> red. */
+    --ma9:#4e9e7e; --ma21:#c9a94a; --ma50:#c4813c; --ma100:#c06a5c;
+    --up:#4e9e7e; --down:#c06a5c;
+    --level:#e3bc55;   /* support & resistance share one colour */
+
+    --f-display:'Archivo',-apple-system,'Segoe UI',Arial,sans-serif;
+    --f-mono:'IBM Plex Mono',ui-monospace,monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0; height:100%}
   body{
     background:var(--bg); color:var(--ink); font-size:14px;
-    font-family:-apple-system,'Segoe UI',Arial,sans-serif;
+    font-family:var(--f-display);
     display:flex; flex-direction:column;
   }
+
+  /* Width, not just size, separates the two voices: labels are condensed and
+     set in caps like a board at an exchange, figures are wide and monospaced.
+     Reading one against the other is what tells them apart at a glance. */
+  .c-lbl,.legend,.lv-head{font-stretch:82%}
 
   header{
     border-bottom:1px solid var(--line); padding:12px 18px;
     display:flex; flex-wrap:wrap; gap:14px; align-items:center;
   }
-  .brand{font-size:15px; font-weight:600; letter-spacing:.2px}
-  .brand span{color:var(--dim); font-weight:400; font-size:12.5px; margin-inline-start:8px}
+  .brand{font-size:15px; font-weight:700; letter-spacing:.2px; font-stretch:82%;
+         text-transform:uppercase}
+  .brand span{color:var(--dim); font-weight:400; font-size:12.5px; margin-inline-start:8px;
+              text-transform:none; font-stretch:100%}
 
   input[type=text]{
-    background:#0d1117; border:1px solid var(--line2); color:var(--ink);
-    padding:8px 12px; border-radius:6px; font-size:13.5px; width:170px;
-    font-family:ui-monospace,monospace;
+    background:#0a0c0f; border:1px solid var(--line2); color:var(--ink);
+    padding:8px 12px; border-radius:4px; font-size:13.5px; width:170px;
+    font-family:var(--f-mono);
     text-transform:uppercase;
   }
   input[type=text]:focus{outline:none; border-color:var(--acc)}
   button{
-    background:#21262d; border:1px solid var(--line2); color:var(--ink);
-    padding:8px 12px; border-radius:6px; font-size:12.5px; cursor:pointer;
+    background:#1a1f26; border:1px solid var(--line2); color:var(--ink);
+    padding:8px 12px; border-radius:4px; font-size:12.5px; cursor:pointer;
+    font-family:var(--f-mono);
   }
-  button:hover{background:#2d333b}
-  button.go{background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:600}
+  button:hover{background:#242a33}
+  button.go{background:var(--acc); border-color:var(--acc); color:#0a0c0f; font-weight:600}
   .chips{display:flex; gap:6px; flex-wrap:wrap}
-  .chips button{padding:7px 10px; font-size:12px; font-family:ui-monospace,monospace}
+  .chips button{padding:7px 10px; font-size:12px}
   .sep{width:1px; height:24px; background:var(--line)}
 
   .quote{display:flex; align-items:baseline; gap:10px; margin-inline-start:auto}
-  .q-sym{font-size:13px; color:var(--dim); font-family:ui-monospace,monospace}
-  .q-px{font-size:22px; font-weight:600; font-variant-numeric:tabular-nums}
-  .q-ch{font-size:13.5px; font-variant-numeric:tabular-nums}
+  .q-sym{font-size:13px; color:var(--dim); font-family:var(--f-mono)}
+  .q-px{font-size:24px; font-weight:500; font-family:var(--f-mono);
+        font-variant-numeric:tabular-nums; letter-spacing:-.5px}
+  .q-ch{font-size:13px; font-family:var(--f-mono); font-variant-numeric:tabular-nums}
   .pos{color:var(--up)} .neg{color:var(--down)}
 
   .legend{
@@ -65,7 +89,7 @@
   #chart{position:absolute; inset:0}
   #veil{
     position:absolute; inset:0; display:none; place-items:center; text-align:center;
-    background:#0d1117e6; z-index:5; padding:24px; font-size:13.5px; line-height:1.8;
+    background:#0a0c0fe6; z-index:5; padding:24px; font-size:13.5px; line-height:1.8;
   }
   #veil.on{display:grid}
   #veil .big{font-size:15px; color:var(--ink); margin-bottom:6px}
@@ -83,26 +107,30 @@
   .lv-head b{color:var(--ink); font-weight:600; font-size:14.5px; letter-spacing:.2px;
              margin-inline-end:2px}
 
-  /* The one number a section leads with. Proportional figures rather than tabular,
-     because equal-width digits read loose at this size. */
-  .hero{display:flex; align-items:baseline; gap:9px; margin:7px 0 11px}
-  .hero b{font-size:42px; font-weight:600; line-height:1; letter-spacing:-.5px;
-          font-variant-numeric:proportional-nums}
+  /* Demoted from a 42px hero. A score out of seven is a heading for the column it
+     summarises, not the loudest thing on the page — the profile is. */
+  .hero{display:flex; align-items:baseline; gap:8px; margin:6px 0 12px}
+  .hero b{font-size:27px; font-weight:500; line-height:1; letter-spacing:-.6px;
+          font-family:var(--f-mono); font-variant-numeric:tabular-nums}
   .hero span{font-size:12.5px; color:var(--dim)}
 
-  /* One fact per line: name at the start, value at the end, hairline between. */
+  /* One fact per line: name at the start, value at the end, hairline between.
+     The name never breaks — in the narrow rail "1y percentile" was splitting across
+     two lines while its value sat whole. If something has to give, the value drops
+     to its own line and the name stays readable. */
   .ln{
-    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-    padding:5px 0; border-bottom:1px solid #1b212a; font-size:12.5px; line-height:1.5;
+    display:flex; align-items:baseline; justify-content:space-between; gap:4px 12px;
+    flex-wrap:wrap;
+    padding:5px 0; border-bottom:1px solid #1a1f27; font-size:12.5px; line-height:1.5;
   }
   .ln:last-child{border-bottom:0}
-  .ln .n{display:flex; align-items:baseline; gap:7px; min-width:0}
+  .ln .n{display:flex; align-items:baseline; gap:7px; min-width:0; white-space:nowrap}
   .ln .v{display:flex; align-items:center; gap:8px; flex:none;
          color:var(--dim); font-size:12px}
 
   /* A category's share of its own conditions, as a track rather than a fraction
      the reader has to divide in their head. */
-  .meter{width:46px; height:4px; border-radius:2px; background:#242b35; flex:none; overflow:hidden}
+  .meter{width:46px; height:4px; border-radius:2px; background:#20262e; flex:none; overflow:hidden}
   .meter i{display:block; height:100%; background:#6e7681; border-radius:2px}
   .meter.full i{background:var(--up)}
   .meter.none i{background:var(--down)}
@@ -124,28 +152,54 @@
     padding-inline-start:13px; border-inline-start:2px solid var(--line);
   }
   .lv{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+
+  /* The coloured start-border is gone. It was applied to five of the eight cards
+     and skipped on the rest, so it read as a fault rather than a code — and every
+     signal it carried is already stated in words inside the card. */
   .cell{
-    background:var(--panel); border:1px solid var(--line); border-radius:9px;
-    padding:11px 13px; border-inline-start-width:3px; border-inline-start-style:solid;
+    background:var(--panel); border:1px solid var(--line); border-radius:5px;
+    padding:12px 14px;
   }
-  .cell.r,
-  .cell.s{border-inline-start-color:var(--level)}
-  .cell.none{border-inline-start-color:var(--line2)}
-  .cell.bull{border-inline-start-color:var(--up)}
-  .cell.bear{border-inline-start-color:var(--down)}
-  .cell.flat{border-inline-start-color:#8b949e}
+
+  /* Score and By category stack into a narrow rail so the long checklist beside
+     them sets the height. Three equal columns left the first one 60% empty. */
+  @media (min-width:900px){
+    #st, #fu{align-items:start; grid-template-columns:minmax(240px,270px) 1fr 1fr}
+    #st .cell:nth-child(1){grid-column:1; grid-row:1}
+    #st .cell:nth-child(2){grid-column:1; grid-row:2}
+    #st .cell:nth-child(3){grid-column:2 / span 2; grid-row:1 / span 2}
+    #st .cell:only-child, #fu .cell:only-child{grid-column:1 / -1; grid-row:1}
+  }
 
   /* status strip: denser than the level cards, so the chart keeps its height */
-  .cell.st{padding:9px 12px}
-  .cell.st .mono{font-family:ui-monospace,monospace; font-size:11.5px}
+  .cell.st{padding:12px 14px}
+  .cell.st .mono{font-family:var(--f-mono); font-size:11.5px}
   .ok{color:var(--up)} .no{color:var(--down)} .ok-neutral{color:var(--ink)}
-  .c-lbl{font-size:11px; color:#6e7681; letter-spacing:.4px; text-transform:uppercase}
-  .c-px{font-size:26px; font-weight:600; margin-top:4px;
-         font-variant-numeric:proportional-nums; letter-spacing:-.3px}
+  .c-lbl{font-size:10.5px; color:#6e7681; letter-spacing:.7px; text-transform:uppercase}
   .c-meta{font-size:12px; color:var(--dim); margin-top:3px}
   .c-none{font-size:13px; color:var(--dim); margin-top:6px; line-height:1.6}
   .note{font-size:11.5px; color:#6e7681; margin-top:11px; line-height:1.7}
-  .cell.st{padding:12px 14px}
+  .ln .v{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+
+  /* ── the volume profile ──────────────────────────────────────────────
+     The histogram profileLevels() already builds, drawn against the chart's own
+     price scale so a bulge sits at the same height as the line it produced. It
+     was being computed and thrown away; only the two peak prices survived. */
+  #vp{position:absolute; top:0; inset-inline-end:0; pointer-events:none; z-index:2}
+
+  /* Three cards carrying two numbers and one sentence became one line. The
+     numbers are labels on the graphic above; this is the reading of it. */
+  .lvstrip{
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:7px 20px;
+    font-size:12.5px; color:var(--dim); padding:2px 0 4px;
+  }
+  .lvstrip .it{display:flex; align-items:baseline; gap:8px}
+  .lvstrip .k{font-size:10.5px; letter-spacing:.7px; text-transform:uppercase;
+              color:#6e7681; font-stretch:82%}
+  .lvstrip .p{font-family:var(--f-mono); font-size:16px; color:var(--ink);
+              font-variant-numeric:tabular-nums}
+  .lvstrip .d{font-family:var(--f-mono); font-size:11.5px}
+  .lvstrip .say{max-width:62ch; line-height:1.6}
 </style>
 </head>
 <body>
@@ -185,6 +239,7 @@
 
 <div id="wrap">
   <div id="chart"></div>
+  <canvas id="vp" aria-hidden="true"></canvas>
   <div id="veil"><div><div class="big" id="veil-t">Loading…</div><div class="why" id="veil-w"></div></div></div>
 </div>
 
@@ -196,7 +251,7 @@
 
   <section class="sec">
     <div class="lv-head"><b>Volume profile levels</b><span id="lv-win">—</span></div>
-    <div class="lv" id="lv"></div>
+    <div class="lvstrip" id="lv"></div>
     <details class="method"><summary>How the levels and the score are worked out</summary><div id="lv-note"></div></details>
   </section>
 
@@ -347,7 +402,9 @@ function profileLevels(bars, price, opt){
 
   const res = nodes.filter(n => n.p > price).sort((a,b) => a.p - b.p).slice(0,2);
   const below = nodes.filter(n => n.p < price).sort((a,b) => b.p - a.p);
-  return { nodes, res, sup: below[0] || null, total };
+  /* hist/lo/w ride along so the histogram can be drawn. They were local before and
+     the whole shape was discarded once the peaks had been picked out of it. */
+  return { nodes, res, sup: below[0] || null, total, hist, lo, w };
 }
 
 /* ───────────────── trend state & triggers ─────────────────
@@ -442,31 +499,37 @@ async function fetchCrypto(sym){
 /* ──────────────────────────── chart ──────────────────────────── */
 
 const chart = LC.createChart(document.getElementById('chart'), {
-  layout:{ background:{ type:'solid', color:'#0d1117' }, textColor:'#8b949e',
-           fontSize:11, panes:{ separatorColor:'#262d38', separatorHoverColor:'#30363d' } },
-  grid:{ vertLines:{ color:'#1b2129' }, horzLines:{ color:'#1b2129' } },
+  layout:{ background:{ type:'solid', color:'#0a0c0f' }, textColor:'#79838f',
+           fontSize:11, fontFamily:"'IBM Plex Mono',ui-monospace,monospace",
+           panes:{ separatorColor:'#212731', separatorHoverColor:'#2b323d' } },
+  grid:{ vertLines:{ color:'#161b21' }, horzLines:{ color:'#161b21' } },
   /* Lightweight Charts leaves 20% headroom and 10% underneath by default, so a third
      of the price pane was empty and every candle was a third smaller than it needed to
      be. The ribbon and the level lines still need a little air, not that much. */
-  rightPriceScale:{ borderColor:'#262d38', scaleMargins:{ top:0.06, bottom:0.08 } },
-  timeScale:{ borderColor:'#262d38', rightOffset:6 },
+  rightPriceScale:{ borderColor:'#212731', scaleMargins:{ top:0.06, bottom:0.08 } },
+  timeScale:{ borderColor:'#212731', rightOffset:6 },
   crosshair:{ mode:LC.CrosshairMode.Normal,
-              vertLine:{ color:'#48505a', labelBackgroundColor:'#30363d' },
-              horzLine:{ color:'#48505a', labelBackgroundColor:'#30363d' } },
+              vertLine:{ color:'#454d58', labelBackgroundColor:'#2b323d' },
+              horzLine:{ color:'#454d58', labelBackgroundColor:'#2b323d' } },
   localization:{ locale:'en-US' },
   autoSize:true,
 });
 
 const candles = chart.addSeries(LC.CandlestickSeries, {
-  upColor:'#26a69a', downColor:'#ef5350', borderVisible:false,
-  wickUpColor:'#26a69a', wickDownColor:'#ef5350',
+  upColor:'#4e9e7e', downColor:'#c06a5c', borderVisible:false,
+  wickUpColor:'#4e9e7e', wickDownColor:'#c06a5c',
 }, 0);
 
+/* Still green, yellow, orange, red fast to slow, as the README says — held back a
+   step each so the ribbon reads as one object and leaves the profile the loudest
+   thing on screen. EMA 21 is deliberately a dark olive rather than a bright yellow:
+   the levels are gold, and at full brightness the two were the same colour on the
+   chart. Nothing but a level is allowed near that gold. */
 const MAS = [
-  { key:'ema9',   label:'EMA 9',   color:'#00c853' },
-  { key:'ema21',  label:'EMA 21',  color:'#f6c309' },
-  { key:'sma50',  label:'SMA 50',  color:'#fb9800' },
-  { key:'sma100', label:'SMA 100', color:'#f60c0c' },
+  { key:'ema9',   label:'EMA 9',   color:'#4e9e7e' },
+  { key:'ema21',  label:'EMA 21',  color:'#8f8a3f' },
+  { key:'sma50',  label:'SMA 50',  color:'#c4813c' },
+  { key:'sma100', label:'SMA 100', color:'#c06a5c' },
 ];
 const maSeries = {};
 for (const m of MAS)
@@ -480,11 +543,11 @@ const volSeries = chart.addSeries(LC.HistogramSeries, {
 }, 1);
 
 const rsiSeries = chart.addSeries(LC.LineSeries, {
-  color:'#9c88ff', lineWidth:2, priceLineVisible:false, lastValueVisible:false,
+  color:'#8b82c4', lineWidth:2, priceLineVisible:false, lastValueVisible:false,
   priceFormat:{ type:'price', precision:1, minMove:0.1 },
 }, 2);
 const rsiMaSeries = chart.addSeries(LC.LineSeries, {
-  color:'#f6c309', lineWidth:1.5, priceLineVisible:false, lastValueVisible:false,
+  color:'#c9a94a', lineWidth:1.5, priceLineVisible:false, lastValueVisible:false,
   crosshairMarkerVisible:false,
 }, 2);
 
@@ -498,8 +561,8 @@ for (const [v, dash] of [[70, LC.LineStyle.Dashed], [50, LC.LineStyle.Dotted], [
 LC.createTextWatermark(chart.panes()[2], {
   horzAlign:'left', vertAlign:'top',
   lines:[
-    { text:'RSI 14',     color:'#9c88ff', fontSize:11, fontStyle:'600' },
-    { text:'RSI SMA 14', color:'#f6c309', fontSize:11, fontStyle:'600' },
+    { text:'RSI 14',     color:'#8b82c4', fontSize:11, fontStyle:'600' },
+    { text:'RSI SMA 14', color:'#c9a94a', fontSize:11, fontStyle:'600' },
   ],
 });
 
@@ -511,7 +574,9 @@ function sizePanes(){
     panes[2].setHeight(Math.max(76, Math.round(h * 0.17)));
   }
 }
-window.addEventListener('resize', () => setTimeout(sizePanes, 60));
+/* renderLevels too: the profile canvas is sized in pixels against the chart's
+   price scale, so it has to be redrawn once the panes have their new height. */
+window.addEventListener('resize', () => setTimeout(() => { sizePanes(); renderLevels(); }, 60));
 
 /* ──────────────────────────── state ──────────────────────────── */
 
@@ -622,7 +687,7 @@ function paintSeries(){
 
   volSeries.setData(BARS.map((b,i) => ({
     time:b.t, value:b.v,
-    color: (i > 0 && b.c < BARS[i-1].c) ? '#ef535066' : '#26a69a66',
+    color: (i > 0 && b.c < BARS[i-1].c) ? '#c06a5c66' : '#4e9e7e66',
   })));
 
   rsiSeries.setData(IND.rsi.map((v,i) => v == null ? null : ({ time:t[i], value:v })).filter(Boolean));
@@ -631,20 +696,55 @@ function paintSeries(){
 
 /* ───────────────────── levels: draw + report ───────────────────── */
 
-const LEVEL_COLOR = '#2962ff';   // keep in sync with --level in the stylesheet
+const LEVEL_COLOR = '#e3bc55';   // keep in sync with --level in the stylesheet
 
 function clearLines(){
   for (const l of priceLines) candles.removePriceLine(l);
   priceLines = [];
 }
 
-function cellRes(n, price, i){
-  const pct = (n.p / price - 1) * 100;
-  return `<div class="cell r">
-    <div class="c-lbl">Resistance ${i}</div>
-    <div class="c-px">${fmt(n.p)}</div>
-    <div class="c-meta">+${pct.toFixed(1)}% from price</div>
-  </div>`;
+function itemLevel(k, p, price){
+  const pct = (p / price - 1) * 100;
+  return `<div class="it"><span class="k">${k}</span><span class="p">${fmt(p)}</span>`
+       + `<span class="d">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</span></div>`;
+}
+
+/* The ramp is repeated here because canvas cannot read a custom property without a
+   getComputedStyle round trip, and this redraws on every pan. Keep in step with
+   --vp-10..100 above. */
+const VP_RAMP = ['#2e2a1c','#5e5028','#9c8235','#e3bc55'];
+const VP_W = 92;
+
+/* Draws the histogram against the chart's own price scale, so a bulge sits at the
+   height of the line it produced. Bars grow left from the scale, the convention
+   everywhere this is shown. Silent no-op when there is no profile — the strip
+   below says why in words. */
+function drawProfile(pr){
+  const cv = $('vp'), H = $('wrap').clientHeight, dpr = window.devicePixelRatio || 1;
+  let psw = 0;
+  try { psw = chart.priceScale('right').width() || 0; } catch(e) { psw = 0; }
+  cv.style.insetInlineEnd = psw + 'px';
+  cv.style.width = VP_W + 'px'; cv.style.height = H + 'px';
+  cv.width = Math.round(VP_W * dpr); cv.height = Math.round(H * dpr);
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, VP_W, H);
+  if (!pr || !pr.hist || !(pr.total > 0)) return;
+
+  let max = 0;
+  for (const v of pr.hist) if (v > max) max = v;
+  if (!(max > 0)) return;
+
+  for (let i = 0; i < pr.hist.length; i++){
+    if (!(pr.hist[i] > 0)) continue;
+    const y0 = candles.priceToCoordinate(pr.lo + (i + 1) * pr.w);
+    const y1 = candles.priceToCoordinate(pr.lo + i * pr.w);
+    if (y0 == null || y1 == null) continue;      // bin is off-screen vertically
+    const share = pr.hist[i] / max;
+    const bw = Math.max(1, share * (VP_W - 8));
+    g.fillStyle = VP_RAMP[Math.min(3, Math.floor(share * 4))];
+    g.fillRect(VP_W - bw, y0, bw, Math.max(1, y1 - y0));
+  }
 }
 
 function renderLevels(){
@@ -665,6 +765,7 @@ function renderLevels(){
     $('lv-win').textContent = 'Range too narrow to compute';
     $('lv-note').textContent = '';
     brkMarkers.setMarkers([]);
+    drawProfile(null);
     return;
   }
 
@@ -674,7 +775,8 @@ function renderLevels(){
   const anchor = win[win.length - 1];
   const price = anchor.c;
   const live  = to === BARS.length - 1;
-  const { nodes, res, sup, novol } = profileLevels(win, price);
+  const pr = profileLevels(win, price);
+  const { nodes, res, sup, novol } = pr;
 
   $('lv-win').textContent =
     `${fmtDate(win[0].t)} to ${fmtDate(anchor.t)} · ${win.length} bars · ${nodes.length} clusters found`
@@ -683,36 +785,33 @@ function renderLevels(){
   const html = [];
 
   res.forEach((n, i) => {
-    html.push(cellRes(n, price, i + 1));
+    html.push(itemLevel('Resistance ' + (i+1), n.p, price));
     priceLines.push(candles.createPriceLine({
       price:n.p, color:LEVEL_COLOR, lineWidth:1, lineStyle:LC.LineStyle.Solid,
       axisLabelVisible:true, title:`R${i+1}`,
     }));
   });
-  const noneWhy = novol
-    ? 'No volume in this window, so there is no profile to build'
-    : null;
-  for (let i = res.length; i < 2; i++)
-    html.push(`<div class="cell none"><div class="c-lbl">Resistance ${i+1}</div>
-      <div class="c-none">${noneWhy || 'No volume cluster above the price in this window'}</div></div>`);
 
   if (sup){
-    const pct = (sup.p / price - 1) * 100;
-    html.push(`<div class="cell s">
-      <div class="c-lbl">Support</div>
-      <div class="c-px">${fmt(sup.p)}</div>
-      <div class="c-meta">${pct.toFixed(1)}% from price</div>
-    </div>`);
+    html.push(itemLevel('Support', sup.p, price));
     priceLines.push(candles.createPriceLine({
       price:sup.p, color:LEVEL_COLOR, lineWidth:1, lineStyle:LC.LineStyle.Solid,
       axisLabelVisible:true, title:'S1',
     }));
-  } else {
-    html.push(`<div class="cell none"><div class="c-lbl">Support</div>
-      <div class="c-none">${noneWhy || 'No volume cluster below the price. It is trading under every cluster in this window.'}</div></div>`);
   }
 
+  /* An absent level is a finding, not a blank. The sentences are unchanged — they
+     just no longer need a card each to be said. */
+  const says = [];
+  if (novol) says.push('No volume in this window, so there is no profile to build.');
+  else {
+    if (!res.length) says.push('No volume cluster above the price in this window.');
+    if (!sup) says.push('No volume cluster below the price. It is trading under every cluster in this window.');
+  }
+  if (says.length) html.push(`<div class="say">${says.join(' ')}</div>`);
+
   $('lv').innerHTML = html.join('');
+  drawProfile(pr);
 
   /* the level break is the one event tied to the levels, so it belongs here and
      moves with the view exactly as they do */
@@ -1333,6 +1432,7 @@ function resetView(){
   $('qch').textContent = ''; $('qch').className = 'q-ch';
   $('st').innerHTML = '';  $('st-sub').textContent = '—';
   $('lv').innerHTML = '';  $('lv-win').textContent = '—'; $('lv-note').textContent = '';
+  drawProfile(null);
   $('fu').innerHTML = '';  $('fu-sub').textContent = '—'; $('fu-note').textContent = '';
 }
 

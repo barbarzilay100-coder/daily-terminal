@@ -91,8 +91,11 @@ server.listen(PORT, () => {
   });
 
   await pg.goto(`${BASE}/index.html`);
+  /* Any child of #lv, rather than a count of level items: a window with no cluster
+     on one side renders fewer items and one sentence saying so, and waiting on a
+     fixed count would hang on exactly the empty states this suite exists to check. */
   await pg.waitForFunction(()=>window.__BARS && window.__BARS.length>0
-                              && document.querySelectorAll('#lv .cell').length>=3
+                              && document.getElementById('lv').children.length>0
                               && document.querySelectorAll('#fu .cell').length>0,
                            null, {timeout:30000});
 
@@ -143,7 +146,11 @@ server.listen(PORT, () => {
     qch:  document.getElementById('qch').textContent,
     qcls: document.getElementById('qch').className,
     win:  document.getElementById('lv-win').textContent,
-    cells:[...document.querySelectorAll('#lv .cell')].map(c=>({cls:c.className, txt:c.textContent.replace(/\s+/g,' ').trim()})),
+    cells:[...document.querySelectorAll('#lv .it')].map(c=>({
+      k:c.querySelector('.k').textContent.trim(),
+      p:c.querySelector('.p').textContent.trim(),
+      txt:c.textContent.replace(/\s+/g,' ').trim() })),
+    say: (document.querySelector('#lv .say')||{}).textContent || '',
     bars: window.__BARS ? window.__BARS.length : -1,
     lines:window.__lines ? window.__lines.length : -1,
     panes:window.__chart.panes().length,
@@ -158,13 +165,16 @@ server.listen(PORT, () => {
   ck('canvases rendered', s.canv>=3, s.canv);
   ck('quote shows symbol + price', s.qsym==='ORCL' && s.qpx==='114.99', [s.qsym,s.qpx]);
   ck('quote change is negative-styled', /neg/.test(s.qcls), s.qcls);
-  ck('exactly 3 level cells', s.cells.length===3, s.cells.length);
+  ck('exactly 3 level items', s.cells.length===3, s.cells.length);
   ck('window line reports bars + nodes', /bars/.test(s.win) && /clusters/.test(s.win), s.win);
 
   const sup = s.cells[2];
-  ck('support cell is a real level on the 5Y window (ORCL traded down there in 2022)',
-     /cell s/.test(sup.cls) && /104\.71/.test(sup.txt), sup);
-  ck('two resistance cells are real levels', /cell r/.test(s.cells[0].cls) && /cell r/.test(s.cells[1].cls), [s.cells[0].cls,s.cells[1].cls]);
+  ck('support item is a real level on the 5Y window (ORCL traded down there in 2022)',
+     sup.k==='Support' && /104\.71/.test(sup.p), sup);
+  ck('two resistance items are real levels, labelled and priced',
+     /^Resistance 1$/.test(s.cells[0].k) && /^Resistance 2$/.test(s.cells[1].k)
+       && /\d/.test(s.cells[0].p) && /\d/.test(s.cells[1].p), [s.cells[0],s.cells[1]]);
+  ck('nothing is missing, so the panel says nothing', s.say==='', s.say);
   ck('price lines drawn = number of real levels (3)', s.lines===3, s.lines);
 
   // algorithm parity with the Python golden run on the same 5Y window
@@ -197,13 +207,20 @@ server.listen(PORT, () => {
   const NVUI = await pg.evaluate(()=>{
     const keep = window.__BARS;
     window.__setBARS(keep.map(b=>({...b, v:0}))); window.__paintSeries(); window.__renderLevels();
-    const out = { txt:[...document.querySelectorAll('#lv .cell')].map(c=>c.textContent.replace(/\s+/g,' ').trim()),
+    const out = { items:document.querySelectorAll('#lv .it').length,
+                  say:(document.querySelector('#lv .say')||{}).textContent||'',
+                  ink:window.__vpInk(),
                   lines:window.__lines.length };
     window.__setBARS(keep); window.__paintSeries(); window.__renderLevels();
     return out;
   });
   ck('the panel says WHY there are no levels instead of showing a bare empty card',
-     NVUI.txt.length===3 && NVUI.txt.every(t=>/No volume in this window/.test(t)) && NVUI.lines===0, NVUI);
+     NVUI.items===0 && /No volume in this window/.test(NVUI.say) && NVUI.lines===0, NVUI);
+  /* The histogram is the page's main claim, so an empty profile must leave an empty
+     canvas. Drawing the previous symbol's shape under a "no volume" sentence would
+     be the worst failure this redesign can have. */
+  ck('no volume -> the profile canvas is blank, not the last shape drawn',
+     NVUI.ink===0, NVUI.ink);
 
   // ═══ indicator sanity, including the null-prefix case ═══
   const ind = await pg.evaluate(()=>{
@@ -402,21 +419,33 @@ server.listen(PORT, () => {
              pricePane:window.__chart.panes()[0].getSeries().length };
   });
   ck('the RSI pane carries RSI + its average, in their own colours, off the price pane',
-     rsiPane.n===2 && rsiPane.colors.includes('#9c88ff') && rsiPane.colors.includes('#f6c309')
+     rsiPane.n===2 && rsiPane.colors.includes('#8b82c4') && rsiPane.colors.includes('#c9a94a')
        && rsiPane.pricePane===5, rsiPane);
-  const col = await pg.evaluate(()=>({
-    lvl: window.__LEVEL_COLOR,
-    accents: [...document.querySelectorAll('#lv .cell.r, #lv .cell.s')]
-      .map(c => getComputedStyle(c).borderInlineStartColor),
-    candleUp:   getComputedStyle(document.documentElement).getPropertyValue('--up').trim(),
-    candleDown: getComputedStyle(document.documentElement).getPropertyValue('--down').trim(),
-  }));
+  const col = await pg.evaluate(()=>{
+    const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    return {
+      lvl: window.__LEVEL_COLOR,
+      lineColours: window.__lines.map(l => l.options().color),
+      ribbon: window.__MAS.map(m => m.color),
+      ramp: ['--vp-10','--vp-40','--vp-70','--vp-100'].map(css),
+      declared: css('--level'),
+      candleUp: css('--up'), candleDown: css('--down'),
+    };
+  });
   console.log('\ncolours:', JSON.stringify(col));
-  ck('level colour is blue #2962ff', col.lvl==='#2962ff', col.lvl);
-  ck('every real level card accent is the same blue',
-     col.accents.length>=2 && col.accents.every(c=>c==='rgb(41, 98, 255)'), col.accents);
-  ck('candles keep red/green (blue is only for levels)',
-     col.candleUp==='#26a69a' && col.candleDown==='#ef5350', [col.candleUp,col.candleDown]);
+  ck('level colour is the profile gold and matches the stylesheet',
+     col.lvl==='#e3bc55' && col.declared==='#e3bc55', [col.lvl, col.declared]);
+  ck('every drawn level line carries that same gold',
+     col.lineColours.length>=2 && col.lineColours.every(c=>c===col.lvl), col.lineColours);
+  /* The point of the ramp is that gold means volume. If a moving average or a candle
+     were also gold the encoding would be a lie, so no other series may hold it. */
+  ck('nothing else on the chart is that gold',
+     !col.ribbon.includes(col.lvl) && col.candleUp!==col.lvl && col.candleDown!==col.lvl,
+     [col.ribbon, col.candleUp, col.candleDown]);
+  ck('the gold is the top of the volume ramp, not a colour of its own',
+     col.ramp[3]===col.lvl && new Set(col.ramp).size===4, col.ramp);
+  ck('candles keep red/green', col.candleUp==='#4e9e7e' && col.candleDown==='#c06a5c',
+     [col.candleUp, col.candleDown]);
 
   // ─────────── dates, trend row, triggers ───────────
   const dt = await pg.evaluate(()=>({
@@ -503,7 +532,7 @@ server.listen(PORT, () => {
   ck('every trigger arrow is white and labelled 9/21',
      mk.every(m=>m.color==='#ffffff' && m.text==='9/21'), mk.slice(0,3));
   ck('trigger arrows carry no red/green (that was the clash)',
-     !mk.some(m=>/ef5350|26a69a/i.test(m.color||'')), mk.slice(0,3));
+     !mk.some(m=>/c06a5c|4e9e7e/i.test(m.color||'')), mk.slice(0,3));
 
   // the level break must be a real close-through of a level that is actually displayed
   const brk = await pg.evaluate(()=>{
@@ -511,7 +540,7 @@ server.listen(PORT, () => {
     const m = window.__brkMarkers.markers()[0];
     if(!m) return null;
     const i = idx[m.time];
-    const shown = [...document.querySelectorAll('#lv .cell.r .c-px, #lv .cell.s .c-px')]
+    const shown = [...document.querySelectorAll('#lv .it .p')]
       .map(e=>parseFloat(e.textContent.replace(/,/g,'')));
     return { prev:B[i-1].c, cur:B[i].c, tag:m.text, date:m.time, shown,
              line: document.getElementById('lv-win').textContent };
@@ -532,13 +561,18 @@ server.listen(PORT, () => {
   await pg.evaluate(()=>{ const n=window.__BARS.length; window.__chart.timeScale().setVisibleLogicalRange({from:n-260,to:n-1}); });
   await pg.waitForFunction(w=>document.getElementById('lv-win').textContent!==w, before, {timeout:15000});
   const after = await pg.evaluate(()=>({ win:document.getElementById('lv-win').textContent,
-    cells:[...document.querySelectorAll('#lv .cell')].map(c=>c.textContent.replace(/\s+/g,' ').trim()),
+    items:[...document.querySelectorAll('#lv .it')].map(c=>c.textContent.replace(/\s+/g,' ').trim()),
+    say:(document.querySelector('#lv .say')||{}).textContent||'',
+    ink:window.__vpInk(),
     lines:window.__lines.length }));
-  console.log('\nwindow before:', before, '\nwindow after :', after.win, '\ncells after  :', JSON.stringify(after.cells));
+  console.log('\nwindow before:', before, '\nwindow after :', after.win, '\nitems after  :', JSON.stringify(after.items));
   ck('levels recompute on visible-range change', before!==after.win, [before, after.win]);
   ck('narrow window -> honest empty support state (no node below price)',
-     /No volume cluster below the price/.test(after.cells[2]), after.cells[2]);
+     /No volume cluster below the price/.test(after.say) && after.items.length===2, after);
   ck('narrow window -> only the 2 resistance lines are drawn', after.lines===2, after.lines);
+  /* A window with no support still has a profile, so the histogram must still be
+     drawn — the empty state is about one missing level, not about the shape. */
+  ck('the profile is still drawn when only one side is missing', after.ink>0, after.ink);
 
   // a range too narrow to compute must clear what it cannot replace
   const TN = await pg.evaluate(async ()=>{
@@ -546,7 +580,8 @@ server.listen(PORT, () => {
     window.__chart.timeScale().setVisibleLogicalRange({from:n-6,to:n-1});
     await window.__stable();
     const out = { win:document.getElementById('lv-win').textContent,
-                  cells:document.querySelectorAll('#lv .cell').length,
+                  cells:document.getElementById('lv').children.length,
+                  ink:window.__vpInk(),
                   lines:window.__lines.length, brk:window.__brkMarkers.markers().length };
     window.__chart.timeScale().fitContent();
     await window.__stable();
@@ -554,6 +589,7 @@ server.listen(PORT, () => {
   });
   ck('a too-narrow range clears the stale levels instead of leaving them drawn',
      /Range too narrow/.test(TN.win) && TN.cells===0 && TN.lines===0 && TN.brk===0, TN);
+  ck('a too-narrow range clears the profile canvas too', TN.ink===0, TN.ink);
   await pg.screenshot({ path: path.join(__dirname, '.tmp', 'shot-zoom.png') });
 
   // ═══════════════ fundamental layer ═══════════════
@@ -713,14 +749,15 @@ server.listen(PORT, () => {
     qsym:document.getElementById('qsym').textContent, qpx:document.getElementById('qpx').textContent,
     bars:window.__BARS.length, win:document.getElementById('lv-win').textContent,
     fu:document.getElementById('fu').textContent.replace(/\s+/g,' ').trim(),
-    cells:[...document.querySelectorAll('#lv .cell')].map(c=>({cls:c.className,txt:c.textContent.replace(/\s+/g,' ').trim()})),
+    cells:[...document.querySelectorAll('#lv .it')].map(c=>({cls:c.querySelector('.k').textContent.trim(),txt:c.textContent.replace(/\s+/g,' ').trim()})),
   }));
   console.log('\n=== BTCUSDT ==='); console.log(JSON.stringify({...c2, fu:c2.fu.slice(0,80)},null,2));
   ck('crypto says it has no fundamentals instead of inventing any',
      /files no financial statements/.test(c2.fu) && !/GARP/.test(c2.fu), c2.fu.slice(0,90));
   ck('crypto path loads', c2.veil===false && c2.bars===1000, [c2.veil,c2.bars]);
   ck('crypto quote shown', c2.qsym==='BTCUSDT' && parseFloat(c2.qpx.replace(/,/g,''))>1000, [c2.qsym,c2.qpx]);
-  ck('crypto gets real levels both sides', c2.cells.filter(c=>/cell (r|s)\b/.test(c.cls)).length===3, c2.cells.map(c=>c.cls));
+  ck('crypto gets real levels both sides',
+     c2.cells.filter(c=>/^(Resistance [12]|Support)$/.test(c.cls)).length===3, c2.cells.map(c=>c.cls));
   await pg.screenshot({ path: path.join(__dirname, '.tmp', 'shot-btc.png') });
 
   // ═══ nothing on screen may outlive the symbol it describes ═══

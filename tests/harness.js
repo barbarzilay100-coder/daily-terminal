@@ -86,7 +86,7 @@ const STUB = `<script>
       __garp:garp, __criterionApplies:criterionApplies, __verdictOf:verdictOf, __freshVal:freshVal,
       __fundFromUniverse:fundFromUniverse, __universeAge:universeAge, __universeUsable:universeUsable,
       __ageDays:ageDays, __dateLabel:dateLabel,
-      __COND:COND, __LEVEL_COLOR:LEVEL_COLOR, __resetView:resetView,
+      __COND:COND, __LEVEL_COLOR:LEVEL_COLOR, __MAS:MAS, __resetView:resetView,
       __PROFILE_LOOKBACK:PROFILE_LOOKBACK, __FRESH_DAYS:FRESH_DAYS,
       __FRESH_PRICE_DAYS:FRESH_PRICE_DAYS, __FRESH_STMT_DAYS:FRESH_STMT_DAYS,
       __RSI_LO:RSI_LO, __RSI_HI:RSI_HI,
@@ -95,6 +95,17 @@ const STUB = `<script>
       __setUnivMeta:m => { UNIV_META = m; }, __getUnivMeta:() => UNIV_META,
       __clearFundCache:() => { for (const k in fundCache) delete fundCache[k]; },
       __SECTOR_LABEL:SECTOR_LABEL,
+      /* Non-transparent pixels on the volume-profile canvas. The histogram is drawn,
+         not marked up, so this is the only way the suite can tell "profile shown"
+         from "profile cleared". */
+      __vpInk:() => {
+        const cv = document.getElementById('vp');
+        if (!cv || !cv.width || !cv.height) return 0;
+        const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+        let n = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) n++;
+        return n;
+      },
     });
   } catch (e){ window.__hookErr = e.message; } }, 50));
 })();
