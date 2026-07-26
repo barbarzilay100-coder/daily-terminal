@@ -1,6 +1,6 @@
 /* Builds an offline copy of index.html for the e2e test.
  *
- * Three substitutions, and nothing else — the app code under test is byte-identical
+ * Three substitutions and nothing else. The app code under test is byte-identical
  * to what ships:
  *   1. the Lightweight Charts CDN <script> is repointed at the vendored copy
  *   2. window.fetch is wrapped so every outbound URL resolves to a captured
@@ -11,12 +11,12 @@
  * Date.now(), so with a live clock the fixtures rot: PLBC's P/E is dated 24/07/2026
  * and crosses the 30-day horizon a month after recording, at which point assertions
  * about its GARP score fail with the source unchanged. The README's claim is that the
- * suite does not move with the market — it must not move with the calendar either.
+ * suite does not move with the market. It must not move with the calendar either.
  * If you re-record the fixtures, move RECORDED_AT with them.
  *
  * The fixtures are real recorded API responses (see fixtures/data/), so the test
- * exercises the actual payload shapes — including the awkward ones, like CULP's
- * P/E whose newest value is from 2022.
+ * exercises the actual payload shapes, including the awkward ones like CULP's P/E
+ * whose newest value is from 2022.
  */
 'use strict';
 const fs = require('fs');
@@ -82,7 +82,7 @@ const STUB = `<script>
       __crossovers:crossovers, __trendState:trendState, __gateOpen:gateOpen,
       __lastLevelBreak:lastLevelBreak, __freshUpFlags:freshUpFlags,
       __evalConditions:evalConditions, __scoreAll:scoreAll, __buildHistory:buildHistory,
-      __median:median, __pctlOf:pctlOf, __heDate:heDate,
+      __median:median, __pctlOf:pctlOf, __fmtDate:fmtDate,
       __garp:garp, __criterionApplies:criterionApplies, __verdictOf:verdictOf, __freshVal:freshVal,
       __fundFromUniverse:fundFromUniverse, __universeAge:universeAge, __universeUsable:universeUsable,
       __ageDays:ageDays, __dateLabel:dateLabel,
@@ -104,9 +104,9 @@ const STUB = `<script>
 function build(outDir){
   fs.mkdirSync(outDir, { recursive: true });
   let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  if (!html.includes(CDN)) throw new Error('CDN script tag not found in index.html — did the version change?');
-  /* Swap the whole <script> element, attributes and all — the shipped tag carries an
-     SRI hash for the CDN copy, which by definition will not match a local file. */
+  if (!html.includes(CDN)) throw new Error('CDN script tag not found in index.html. Did the version change?');
+  /* Swap the whole <script> element, attributes and all. The shipped tag carries a
+     hash for the CDN copy, which by definition will not match a local file. */
   const tagRe = /<script[^>]*src="[^"]*lightweight-charts[^"]*"[^>]*>\s*<\/script>/;
   if (!tagRe.test(html)) throw new Error('could not anchor the fetch stub');
   const tag = '<script src="./lwc.js"></script>';

@@ -104,18 +104,23 @@ server.listen(PORT, () => {
      hook.frozen!==null && hook.now===hook.frozen
        && new Date(hook.frozen).toISOString().slice(0,10)==='2026-07-26', [hook.frozen, hook.now]);
 
-  // default viewport must be ~1 trading year, not all 5 years
+  // the opening range is applied and then the levels re-render off it 160ms later, so
+  // read the panel once it has stopped moving rather than mid-settle
+  await pg.evaluate(()=>window.__stable());
   const dflt = await pg.evaluate(()=>{ const r=window.__chart.timeScale().getVisibleLogicalRange();
     return { span: Math.round(r.to-r.from), win: document.getElementById('lv-win').textContent }; });
   /* the count is asserted as a range, not as a 3-digit pattern: the library settles
      the visible range after layout, so the exact bar count is a timing artefact and
      pinning it makes the suite fail for reasons that have nothing to do with the code */
-  const dfltBars = +(dflt.win.match(/· (\d+) נרות/) || [])[1];
+  const dfltBars = +(dflt.win.match(/· (\d+) bars/) || [])[1];
   console.log('default viewport span (bars):', dflt.span, '| bars in window:', dfltBars, '|', dflt.win);
-  ck('default window line shows an Israeli-formatted ~1-year window',
-     /חלון: \d{2}\/\d{2}\/2025 → \d{2}\/\d{2}\/2026/.test(dflt.win) && dfltBars>200 && dfltBars<300,
+  ck('window line shows an unambiguous, spelled-month date range',
+     /^\d{1,2} \w{3} \d{4} to \d{1,2} \w{3} \d{4} · /.test(dflt.win) && dfltBars>110 && dfltBars<170,
      [dflt.win, dfltBars]);
-  ck('opens on ~1 trading year, not the full 5Y', dflt.span>200 && dflt.span<300, dflt.span);
+  // the opening view is a legibility choice: ~250 candles across one screen are two
+  // pixels wide, and the bodies stop being readable long before the year is up
+  ck('opens on a window you can actually read, not on all five years',
+     dflt.span>110 && dflt.span<170, dflt.span);
   ck('quote change formats cleanly (no toPrecision artefact)',
      /^-5\.05 \(-4\.21%\)$/.test(await pg.evaluate(()=>document.getElementById('qch').textContent)),
      await pg.evaluate(()=>document.getElementById('qch').textContent));
@@ -123,11 +128,11 @@ server.listen(PORT, () => {
   /* Zoom all the way out for the 5Y golden checks, and wait for the FULL window to
      be the one on screen. Waiting merely for "the text changed" catches an
      intermediate range mid-animation and measures the golden levels on the wrong
-     window — which is how this produced a level set that legitimately had no
-     support below the price. */
+     window, which is how this produced a level set that legitimately had no support
+     below the price. */
   await pg.evaluate(()=>window.__chart.timeScale().fitContent());
   await pg.waitForFunction(()=>{
-    const m = document.getElementById('lv-win').textContent.match(/· (\d+) נרות/);
+    const m = document.getElementById('lv-win').textContent.match(/· (\d+) bars/);
     return m && +m[1] > 1200;
   }, null, {timeout:20000});
 
@@ -154,7 +159,7 @@ server.listen(PORT, () => {
   ck('quote shows symbol + price', s.qsym==='ORCL' && s.qpx==='114.99', [s.qsym,s.qpx]);
   ck('quote change is negative-styled', /neg/.test(s.qcls), s.qcls);
   ck('exactly 3 level cells', s.cells.length===3, s.cells.length);
-  ck('window line reports bars + nodes', /נרות/.test(s.win) && /צבירים/.test(s.win), s.win);
+  ck('window line reports bars + nodes', /bars/.test(s.win) && /clusters/.test(s.win), s.win);
 
   const sup = s.cells[2];
   ck('support cell is a real level on the 5Y window (ORCL traded down there in 2022)',
@@ -198,7 +203,7 @@ server.listen(PORT, () => {
     return out;
   });
   ck('the panel says WHY there are no levels instead of showing a bare empty card',
-     NVUI.txt.length===3 && NVUI.txt.every(t=>/אין נתוני נפח/.test(t)) && NVUI.lines===0, NVUI);
+     NVUI.txt.length===3 && NVUI.txt.every(t=>/No volume in this window/.test(t)) && NVUI.lines===0, NVUI);
 
   // ═══ indicator sanity, including the null-prefix case ═══
   const ind = await pg.evaluate(()=>{
@@ -236,14 +241,14 @@ server.listen(PORT, () => {
     txt: document.getElementById('st').textContent.replace(/\s+/g,' ').trim(),
   }));
   ck('assessment renders 3 cards', A.cards.length===3, A.cards);
-  ck('score card states X of Y', /\d+ מתוך \d+ תנאים/.test(A.txt), A.txt.slice(0,60));
-  ck('both percentile windows are shown', /אחוזון על שנה/.test(A.txt) && /אחוזון על שנתיים/.test(A.txt), null);
+  ck('score card states X of Y', /\d+ of \d+ conditions/.test(A.txt), A.txt.slice(0,60));
+  ck('both percentile windows are shown', /1y percentile/.test(A.txt) && /2y percentile/.test(A.txt), null);
   ck("the median is a share of conditions, not a fabricated X-of-today's-Y",
-     /חציון \d+%/.test(A.txt) && !/חציון \d+ מתוך/.test(A.txt), A.txt.slice(0,220));
+     /median \d+%/.test(A.txt) && !/median \d+ of \d+/.test(A.txt), A.txt.slice(0,220));
   ck('all four categories are profiled',
-     ['הקשר מגמה','טריות הטריגר','מומנטום','גיאומטריה'].every(x=>A.txt.includes(x)), null);
+     ['Trend','Trigger','Momentum','Geometry'].every(x=>A.txt.includes(x)), null);
   ck('sub-line reports trend + last trigger age',
-     /מגמה:/.test(A.sub) && /ימי מסחר/.test(A.sub), A.sub);
+     /Trend:/.test(A.sub) && /trading days ago/.test(A.sub), A.sub);
 
   // score maths must agree with the raw conditions
   const S2 = await pg.evaluate(()=>{
@@ -303,7 +308,7 @@ server.listen(PORT, () => {
   ck('history covers 504 bars', P.len===504, P.len);
   ck('percentiles are within 0-100', P.y1>=0&&P.y1<=100&&P.y2>=0&&P.y2<=100, [P.y1,P.y2]);
   ck('the reference set is NOT degenerate (spread of scores exists)', P.max>P.min, [P.min,P.max]);
-  ck('the reference set ends on the bar BEFORE today — today is not inside its own comparison',
+  ck('the reference set ends on the bar BEFORE today, so today is not in its own comparison',
      await pg.evaluate(()=>{
        const H=window.__buildHistory(504), L=window.__PROFILE_LOOKBACK, B=window.__BARS;
        const prev=B.length-2;
@@ -362,7 +367,7 @@ server.listen(PORT, () => {
      Z.lvBefore!==Z.lvAfter, [Z.lvBefore, Z.lvAfter]);
   ck('method + caveats are documented in the note',
      await pg.evaluate(()=>{const t=document.getElementById('lv-note').textContent;
-       return /בלי הצצה לעתיד/.test(t) && /בלתי-תלויים/.test(t) && /n\/a/.test(t) && /252/.test(t);}), null);
+       return /no sight of what came after/.test(t) && /not independent/.test(t) && /n\/a/.test(t) && /252/.test(t);}), null);
 
   // levels are measured against the last bar IN VIEW, not against today's close
   const AN = await pg.evaluate(async ()=>{
@@ -377,16 +382,16 @@ server.listen(PORT, () => {
   });
   console.log('anchor check:', JSON.stringify(AN).slice(0,260));
   ck('panning back states which bar the levels are measured against',
-     /מדוד מול הסגירה ב-/.test(AN.win) && Math.abs(AN.anchorC-AN.todayC)>0.01, AN.win.slice(0,160));
+     /measured against the .* close of/.test(AN.win) && Math.abs(AN.anchorC-AN.todayC)>0.01, AN.win.slice(0,160));
   ck('returning to the live window drops the anchor note again',
-     !/מדוד מול הסגירה ב-/.test(AN.backToLive), AN.backToLive.slice(0,120));
+     !/measured against the/.test(AN.backToLive), AN.backToLive.slice(0,120));
 
   const leg = await pg.evaluate(()=>[...document.querySelectorAll('.legend > span')].map(x=>x.textContent.replace(/\s+/g,' ').trim()));
   console.log('\ntop legend:', JSON.stringify(leg));
   ck('top legend = 4 MAs + Volume + the trigger key',
      leg.length===6 && leg.slice(0,5).join('|')==='EMA 9|EMA 21|SMA 50|SMA 100|Volume', leg);
   ck('legend documents what the arrow means',
-     /9\/21/.test(leg[5]) && /כניסה/.test(leg[5]) && /יציאה/.test(leg[5]), leg[5]);
+     /9\/21/.test(leg[5]) && /entry/.test(leg[5]) && /exit/.test(leg[5]), leg[5]);
   ck('no RSI entry left in the top legend', !leg.some(x=>/RSI/.test(x)), leg);
   /* asserting panes().length===3 here only repeated an earlier check. What actually
      needs to hold is that the RSI pane carries both of its series, in their own
@@ -416,22 +421,23 @@ server.listen(PORT, () => {
   // ─────────── dates, trend row, triggers ───────────
   const dt = await pg.evaluate(()=>({
     win: document.getElementById('lv-win').textContent,
-    he:  [window.__heDate('2025-07-24'), window.__heDate('2026-01-05')],
+    he:  [window.__fmtDate('2025-07-24'), window.__fmtDate('2026-01-05')],
     lbl: [window.__dateLabel('Jul 25, 2026'), window.__dateLabel('2026-01-05'),
           window.__dateLabel('2026-12-31'), window.__dateLabel('nonsense')],
     tz:  Intl.DateTimeFormat().resolvedOptions().timeZone,
   }));
-  ck('panel window line uses dd/mm/yyyy',
-     /חלון: \d{2}\/\d{2}\/\d{4} → \d{2}\/\d{2}\/\d{4}/.test(dt.win), dt.win);
-  ck('no ISO dates left in the panel line', !/\d{4}-\d{2}-\d{2}/.test(dt.win), dt.win);
-  ck('heDate converts correctly', dt.he[0]==='24/07/2025' && dt.he[1]==='05/01/2026', dt.he);
+  ck('panel window line spells the month',
+     /^\d{1,2} \w{3} \d{4} to \d{1,2} \w{3} \d{4}/.test(dt.win), dt.win);
+  ck('no raw ISO dates left in the panel line', !/\d{4}-\d{2}-\d{2}/.test(dt.win), dt.win);
+  ck('the month is spelled, so the date cannot be read two ways',
+     dt.he[0]==='24 Jul 2025' && dt.he[1]==='5 Jan 2026', dt.he);
   /* This page runs in Asia/Jerusalem (see newPage above). "Jul 25, 2026" parses as
      local midnight and "2026-01-05" as UTC midnight, so a single ISO round-trip
      shifted one of them by a day. Both must read back exactly as written. */
-  ck("the pipeline's own date format is normalised to dd/mm/yyyy, with no timezone shift",
-     dt.lbl[0]==='25/07/2026' && dt.lbl[1]==='05/01/2026', [dt.lbl, dt.tz]);
+  ck("the pipeline's own date format is normalised to the same one, with no timezone shift",
+     dt.lbl[0]==='25 Jul 2026' && dt.lbl[1]==='5 Jan 2026', [dt.lbl, dt.tz]);
   ck('a year boundary does not roll over either, and an unreadable date is passed through',
-     dt.lbl[2]==='31/12/2026' && dt.lbl[3]==='nonsense', dt.lbl);
+     dt.lbl[2]==='31 Dec 2026' && dt.lbl[3]==='nonsense', dt.lbl);
   ck('the suite runs in the audience timezone, so date bugs cannot hide behind UTC',
      dt.tz==='Asia/Jerusalem', dt.tz);
   ck('chart time axis stays English (locale untouched)',
@@ -443,7 +449,7 @@ server.listen(PORT, () => {
   }));
   ck('status strip has 3 cards', S.cells.length===3, S.cells.length);
   ck('gate is visible as a checklist condition',
-     /SMA 50 מעל SMA 100/.test(await pg.evaluate(()=>document.getElementById('st').textContent)), null);
+     /SMA 50 above SMA 100/.test(await pg.evaluate(()=>document.getElementById('st').textContent)), null);
   ck('checklist shows passes too, not only failures',
      await pg.evaluate(()=>{const t=document.getElementById('st').textContent;
        return t.includes('✓') && t.includes('✗');}), null);
@@ -462,7 +468,7 @@ server.listen(PORT, () => {
   ck('trend label matches the ribbon order actually present',
      (!bull && !bear) ? tv.st.key==='flat' : (bull ? tv.st.key==='bull' : tv.st.key==='bear'), tv.st);
   ck('gate flag equals SMA50 > SMA100', tv.gate === (tv.s50>tv.s100), [tv.gate,tv.s50,tv.s100]);
-  /* The first card is the SCORE card, so its accent tracks the ratio bands — not the
+  /* The first card is the SCORE card, so its accent tracks the ratio bands, not the
      trend state, which only ever appears in the sub-line. The old assertion compared
      the two and passed because on this fixture they happened to agree. */
   const scoreCls = await pg.evaluate(()=>{
@@ -517,7 +523,7 @@ server.listen(PORT, () => {
   const hit = brk ? brk.shown.filter(lv => (brk.prev<=lv && brk.cur>lv) || (brk.prev>=lv && brk.cur<lv)) : [];
   ck('the break bar really closed through one of the displayed levels', hit.length>0, brk);
   ck('the break is reported in the levels line with an Israeli date',
-     !!brk && /פריצה אחרונה: \d{2}\/\d{2}\/\d{4}/.test(brk.line), brk && brk.line);
+     !!brk && /last break \d{1,2} \w{3} \d{4}, closed (above|below)/.test(brk.line), brk && brk.line);
 
   await pg.screenshot({ path: path.join(__dirname, '.tmp', 'shot-orcl.png') });
 
@@ -531,7 +537,7 @@ server.listen(PORT, () => {
   console.log('\nwindow before:', before, '\nwindow after :', after.win, '\ncells after  :', JSON.stringify(after.cells));
   ck('levels recompute on visible-range change', before!==after.win, [before, after.win]);
   ck('narrow window -> honest empty support state (no node below price)',
-     /אין צביר נפח מתחת/.test(after.cells[2]), after.cells[2]);
+     /No volume cluster below the price/.test(after.cells[2]), after.cells[2]);
   ck('narrow window -> only the 2 resistance lines are drawn', after.lines===2, after.lines);
 
   // a range too narrow to compute must clear what it cannot replace
@@ -547,7 +553,7 @@ server.listen(PORT, () => {
     return out;
   });
   ck('a too-narrow range clears the stale levels instead of leaving them drawn',
-     /טווח צר מדי/.test(TN.win) && TN.cells===0 && TN.lines===0 && TN.brk===0, TN);
+     /Range too narrow/.test(TN.win) && TN.cells===0 && TN.lines===0 && TN.brk===0, TN);
   await pg.screenshot({ path: path.join(__dirname, '.tmp', 'shot-zoom.png') });
 
   // ═══════════════ fundamental layer ═══════════════
@@ -561,20 +567,20 @@ server.listen(PORT, () => {
   console.log('\nORCL fundamentals sub:', F1.sub);
   ck('ORCL fundamentals render 3 cards', F1.cards===3, F1.cards);
   ck('ORCL fundamentals come from YOUR pipeline, not the live API',
-     /הפייפליין שלך/.test(F1.txt) && !/stockanalysis/.test(F1.txt.slice(0,200)), F1.txt.slice(0,90));
-  ck('GARP verdict + score shown', /5 מתוך 8 · Solid/.test(F1.txt), F1.txt.slice(0,80));
+     /committed pipeline/.test(F1.txt) && !/stockanalysis/.test(F1.txt.slice(0,200)), F1.txt.slice(0,90));
+  ck('GARP verdict + score shown', /5 of 8 · Solid/.test(F1.txt), F1.txt.slice(0,80));
   ck('all 8 GARP criteria listed',
      ['Revenue Growth','Rule of 40','FCF Margin','Net Margin','Return on Equity','Valuation (PEG)','Fwd Multiple','Balance Sheet']
        .every(n=>F1.txt.includes(n)), null);
   ck('implied value from your pipeline is shown for a covered name', /262\.55/.test(F1.txt), null);
-  ck('quality x timing statement present', /איכותית|חלשה/.test(F1.sub), F1.sub);
-  ck('RECONCILIATION: the two price sources are compared', /מחירים תואמים|פער מחיר/.test(F1.sub), F1.sub);
+  ck('quality x timing statement present', /Good business|Weak business/.test(F1.sub), F1.sub);
+  ck('RECONCILIATION: the two price sources are compared', /prices agree|prices .* apart/.test(F1.sub), F1.sub);
   ck('timing axis uses the ABSOLUTE technical score, not the percentile',
-     new RegExp(`טכני ${F1.tech.passed}/${F1.tech.applicable}`).test(F1.sub) && /תזמון גרוע/.test(F1.sub), F1.sub);
+     new RegExp(`technical ${F1.tech.passed}/${F1.tech.applicable}`).test(F1.sub) && /poor timing/.test(F1.sub), F1.sub);
   ck('caveats documented (denominator + staleness)',
-     /אינו נספר במכנה/.test(F1.note) && /טריות/.test(F1.note), F1.note.slice(0,160));
+     /leaves the denominator/.test(F1.note) && /freshness rule/.test(F1.note), F1.note.slice(0,160));
   ck("the snapshot's build date is shown, in the same format as every other date, with its age",
-     /25\/07\/2026/.test(F1.txt) && /לפני \d+ ימים/.test(F1.txt), F1.txt.slice(0,220));
+     /25 Jul 2026/.test(F1.txt) && /\d+ days? ago/.test(F1.txt), F1.txt.slice(0,220));
 
   // the applicability rules must match the existing terminal exactly
   const AP = await pg.evaluate(()=>{
@@ -651,16 +657,16 @@ server.listen(PORT, () => {
   });
   console.log('sign traps:', JSON.stringify(SG));
   ck('NEGATIVE PEG FAILS the "< 2" test instead of satisfying it',
-     SG.pegSt==='fail' && /אין רווח או צמיחה/.test(SG.pegDisp), SG);
+     SG.pegSt==='fail' && /no positive earnings or growth/.test(SG.pegDisp), SG);
   ck('two negative multiples fail Fwd-vs-Trailing instead of being ranked against each other',
-     SG.fwdSt==='fail' && /מכפיל שלילי/.test(SG.fwdDisp), SG);
+     SG.fwdSt==='fail' && /negative multiple/.test(SG.fwdDisp), SG);
   ck('NEGATIVE EQUITY fails the balance sheet instead of reading as no data',
-     SG.bsSt==='fail' && /הון עצמי שלילי/.test(SG.bsDisp), SG);
-  ck('all three stay IN the denominator — dropping them used to raise the score',
+     SG.bsSt==='fail' && /negative equity/.test(SG.bsDisp), SG);
+  ck('all three stay IN the denominator, because dropping them used to raise the score',
      SG.lossCounted===SG.goodCounted, [SG.lossCounted, SG.goodCounted]);
   ck('a healthy positive PEG still passes', SG.goodPeg==='pass', SG.goodPeg);
-  ck('a NEGATIVE D/E — how the pipeline reports negative equity — fails too, not just Infinity',
-     SG.negDESt==='fail' && /הון עצמי שלילי/.test(SG.negDEDisp) && SG.negDECounted===8, SG);
+  ck('a NEGATIVE D/E, which is how the pipeline reports negative equity, fails too',
+     SG.negDESt==='fail' && /negative equity/.test(SG.negDEDisp) && SG.negDECounted===8, SG);
 
   // ---- live path: a ticker outside the universe ----
   await loadSym('CULP');
@@ -670,21 +676,21 @@ server.listen(PORT, () => {
     note:document.getElementById('fu-note').textContent,
   }));
   console.log('\nCULP:', FC.txt.slice(0,230));
-  ck('LIVE PATH works for a ticker outside your 126', /stockanalysis \(חי\)/.test(FC.txt), FC.txt.slice(0,60));
+  ck('LIVE PATH works for a ticker outside your 126', /stockanalysis \(live\)/.test(FC.txt), FC.txt.slice(0,60));
   ck('sector recovered from SEC SIC', /sector via SEC SIC 2211/.test(FC.txt), FC.txt.slice(0,150));
   ck('the out-of-bucket sector is stated in Hebrew, not printed as the raw token "other"',
-     /סקטור\s+אחר — לא פיננסי ולא סקטור צמיחה/.test(FC.txt) && !/סקטור\s+other/.test(FC.txt),
+     /Sector\s+Other \(not financial, not a growth sector\)/.test(FC.txt) && !/Sector\s+other\b/.test(FC.txt),
      FC.txt.slice(0,180));
   ck('a textile mill is not a growth sector, so Rule of 40 is skipped',
-     /Rule of 40\s+לא ישים/.test(FC.txt), null);
-  ck("CULP's stale 2022 P/E does not leak in — PEG and Fwd Multiple read as missing",
-     /Valuation \(PEG\)\s+אין נתון/.test(FC.txt) && /Fwd Multiple\s+אין נתון/.test(FC.txt), null);
+     /Rule of 40\s+n\/a for sector/.test(FC.txt), null);
+  ck("CULP's stale 2022 P/E does not leak in, so PEG and Fwd Multiple read as missing",
+     /Valuation \(PEG\)\s+no data/.test(FC.txt) && /Fwd Multiple\s+no data/.test(FC.txt), null);
   ck('implied value is n/a on the live path (needs the whole universe)',
-     /ערך משתמע\s+n\/a/.test(FC.txt), null);
+     /Implied value\s+n\/a/.test(FC.txt), null);
   ck('the live path is flagged as an undocumented API in the note',
-     /לא מתועד/.test(FC.note), FC.note.slice(0,120));
+     /no documentation/.test(FC.note), FC.note.slice(0,120));
   ck('no price reconciliation claimed when there is only one source',
-     !/מחירים תואמים|פער מחיר/.test(FC.sub), FC.sub);
+     !/prices agree|prices .* apart/.test(FC.sub), FC.sub);
 
   // ---- live path on a BANK: the applicability rules must fire off SEC data ----
   await loadSym('PLBC');
@@ -693,12 +699,12 @@ server.listen(PORT, () => {
   ck('a bank is identified as Financial Services from its SIC',
      /Financial Services\s+sector via SEC SIC 6153/.test(FB), FB.slice(0,150));
   ck('the bank skips exactly Rule of 40, FCF margin and balance sheet',
-     /Rule of 40\s+לא ישים/.test(FB) && /FCF Margin\s+לא ישים/.test(FB) && /Balance Sheet\s+לא ישים/.test(FB), null);
+     /Rule of 40\s+n\/a for sector/.test(FB) && /FCF Margin\s+n\/a for sector/.test(FB) && /Balance Sheet\s+n\/a for sector/.test(FB), null);
   // shrinking EPS makes PEG a FAILED test rather than an absent one, so the bank is out of 5
   ck('PLBC has shrinking EPS, so its PEG reads as an explicit failure, not as no-data',
-     /Valuation \(PEG\)\s+אין רווח או צמיחה חיוביים/.test(FB), FB.slice(0,280));
+     /Valuation \(PEG\)\s+no positive earnings or growth/.test(FB), FB.slice(0,280));
   ck('the bank is therefore scored out of 5: 4 sector-applicable criteria plus the failed PEG',
-     /3 מתוך 5/.test(FB), FB.slice(0,80));
+     /3 of 5/.test(FB), FB.slice(0,80));
 
   // ---- crypto: no fundamentals, and the chart path still works ----
   await loadSym('BTCUSDT');
@@ -711,7 +717,7 @@ server.listen(PORT, () => {
   }));
   console.log('\n=== BTCUSDT ==='); console.log(JSON.stringify({...c2, fu:c2.fu.slice(0,80)},null,2));
   ck('crypto says it has no fundamentals instead of inventing any',
-     /אין נתונים פונדמנטליים למטבעות/.test(c2.fu) && !/GARP/.test(c2.fu), c2.fu.slice(0,90));
+     /files no financial statements/.test(c2.fu) && !/GARP/.test(c2.fu), c2.fu.slice(0,90));
   ck('crypto path loads', c2.veil===false && c2.bars===1000, [c2.veil,c2.bars]);
   ck('crypto quote shown', c2.qsym==='BTCUSDT' && parseFloat(c2.qpx.replace(/,/g,''))>1000, [c2.qsym,c2.qpx]);
   ck('crypto gets real levels both sides', c2.cells.filter(c=>/cell (r|s)\b/.test(c.cls)).length===3, c2.cells.map(c=>c.cls));
@@ -769,7 +775,7 @@ server.listen(PORT, () => {
   });
   console.log('short-history:', JSON.stringify(SH).slice(0,300));
   ck('a symbol with too little history explains itself instead of showing an empty strip',
-     /צריך לפחות 257 נרות/.test(SH.st) && /יש 200/.test(SH.st), SH.st.slice(0,140));
+     /needs at least 257 bars/.test(SH.st) && /has 200/.test(SH.st), SH.st.slice(0,140));
   ck('NO CROSS-SYMBOL LEAK: TECH, the sub-line and the ribbon markers are cleared with it',
      SH.techBefore!==null && SH.tech===null && SH.sub==='' && SH.marks===0, SH);
 
@@ -785,7 +791,7 @@ server.listen(PORT, () => {
   });
   console.log('race:', JSON.stringify(RC));
   ck('RACE: a superseded load never paints over the one that followed it',
-     RC.qsym==='CULP' && /stockanalysis \(חי\)/.test(RC.fu) && !/הפייפליין/.test(RC.fu), RC);
+     RC.qsym==='CULP' && /stockanalysis \(live\)/.test(RC.fu) && !/committed pipeline/.test(RC.fu), RC);
 
   // ═══ the chart library is the one hard dependency: its absence must be explained ═══
   const nolib = await browser.newPage({ viewport:{ width:1200, height:800 } });
@@ -802,7 +808,7 @@ server.listen(PORT, () => {
   await nolib.close();
   console.log('no-lib page:', JSON.stringify(NL));
   ck('a missing/unverifiable chart library shows an explanation, not a blank page',
-     NL.on && /ספריית הגרפים לא נטענה/.test(NL.t) && /SRI/.test(NL.w), NL);
+     NL.on && /chart library did not load/.test(NL.t) && /checks it against a hash/.test(NL.w), NL);
   ck('and it says so on screen rather than only in the console',
      NL.w.length>60, NL.w.length);
 
@@ -811,7 +817,7 @@ server.listen(PORT, () => {
 })()
   .catch(e => {
     fail++;
-    console.error('\nSUITE CRASHED — the remaining assertions never ran:');
+    console.error('\nSUITE CRASHED. The remaining assertions never ran:');
     console.error(e && e.stack || e);
   })
   .finally(async () => {

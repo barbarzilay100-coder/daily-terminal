@@ -1,4 +1,4 @@
-# Methodology — definitions, thresholds and limitations
+# Methodology: definitions, thresholds and limitations
 
 Everything here is computed deterministically in the browser from daily OHLCV. Nothing is
 smoothed by judgement, no value comes from a language model, and every threshold below is a
@@ -8,13 +8,13 @@ number in `index.html` that can be changed and re-tested.
 
 | Indicator | Definition |
 |---|---|
-| EMA 9, EMA 21 | Exponential moving average, `k = 2/(n+1)`, seeded with a simple average of the first *n* closes — the same seeding TradingView uses, so the two agree after the warm-up. |
+| EMA 9, EMA 21 | Exponential moving average, `k = 2/(n+1)`, seeded with a simple average of the first *n* closes. That is the seeding TradingView uses, so the two agree after the warm-up. |
 | SMA 50, SMA 100 | Simple moving average of the close. |
 | RSI 14 | Wilder's smoothing (`avg = (avg·(n−1) + new)/n`), not a simple average of gains and losses. The distinction matters: a simple-average RSI reads several points different on the same data. |
-| RSI SMA 14 | 14-period simple average **of the RSI series**, not of price. It therefore starts 14 bars after the RSI does — bar 27, not bar 14. The moving average counts real inputs rather than trusting the bar index, because the series it is fed begins with nulls; the index-based version emitted partial sums for the first thirteen bars, a ramp from ~3 up to the true value, drawn as if it were an average. |
+| RSI SMA 14 | 14-period simple average **of the RSI series**, not of price. It therefore starts 14 bars after the RSI does, at bar 27 rather than bar 14. The moving average counts real inputs instead of trusting the bar index, because the series it is fed begins with nulls. The index-based version emitted partial sums for the first thirteen bars, a ramp from about 3 up to the true value, drawn as if it were an average. |
 | Volume MA 50 | Simple average of volume, used only as a confirmation flag. |
 
-The ribbon colours are fixed by design — 9 green, 21 yellow, 50 orange, 100 red — so the ribbon
+The ribbon colours are fixed by design (9 green, 21 yellow, 50 orange, 100 red) so the ribbon
 owns the warm-to-cool spectrum. Trigger markers are therefore white and sit on the EMA 21 line
 rather than on the candles: with four coloured averages already on the chart, any coloured
 marker on the price bars competes with an indicator for the same meaning.
@@ -35,8 +35,8 @@ volume changed hands, which is what makes it likely to matter again.
    them silently dropped an accumulation band that happened to sit at the extreme of the range.
 4. The two nearest levels above the reference price are resistance; the nearest below is support.
 
-**Deliberately empty states.** If no accumulation band sits below the price — the asset has
-fallen through all of them — there is no support level and the panel says exactly that. The same
+**Deliberately empty states.** If no accumulation band sits below the price, meaning the asset
+has fallen through all of them, there is no support level and the panel says exactly that. The same
 applies above. A fabricated level is worse than an absent one.
 
 **No volume, no profile.** If every bar in the window reports zero or missing volume, the mean
@@ -48,7 +48,7 @@ no volume to build a profile from rather than showing bands that no trading crea
 **Window, and what the levels are measured against.** These levels are computed on the **visible
 range**, so panning and zooming updates them. That is intentional: it mirrors what a person does
 by hand when they change the timeframe they are looking at. The reference price is the close of
-the **last bar in view**, not the last bar in the series — pan back to 2022 and "resistance" has
+the **last bar in view**, not the last bar in the series. Pan back to 2022 and "resistance" has
 to mean above the price as it was then, or a 2022 histogram gets sorted against a price that is
 not in the window at all. Whenever the view does not reach the latest bar, the panel names the bar
 the levels are measured against.
@@ -61,27 +61,27 @@ role per component:
 
 | Component | Role | Not used as |
 |---|---|---|
-| SMA 50 vs SMA 100 | **Regime gate** — long triggers only count while 50 is above 100 | An entry. A golden cross fires a handful of times per decade, always after the move has begun. |
+| SMA 50 vs SMA 100 | **Regime gate.** Long triggers only count while 50 is above 100 | An entry. A golden cross fires a handful of times per decade, always after the move has begun. |
 | EMA 9 vs EMA 21 | **The timing trigger** | Context. It is too fast to define a regime. |
-| Close through a volume level | **The one independent event** — it says price cleared a band where real supply changed hands, which no moving average knows | — |
+| Close through a volume level | **The one independent event.** It says price cleared a band where real supply changed hands, which no moving average knows | |
 | RSI vs its own average, volume vs its 50-day average | **Confirmation flags** on a trigger bar | Triggers. Using RSI crossings as separate entries duplicates the EMA cross, and both are momentum. |
 
 **A trigger is not a scored condition.** The table above governs what may *fire an entry*. The
-checklist below scores the *state* of the current bar, and RSI appears there — "RSI above its own
+checklist below scores the *state* of the current bar, and RSI appears there: "RSI above its own
 average" is one of the eight. That is not a contradiction of the rule and it is worth being
 explicit about why: a trigger is a discrete event that says *act now*, and letting two correlated
 indicators each fire one double-counts a single piece of information. A scored condition asks a
-different question — *is momentum currently positive* — and answers it with a continuous state
+different question, *is momentum currently positive*, and answers it with a continuous state
 rather than an event. The 9/21 cross and the RSI reading are correlated in the score, as any two
 functions of the same closes must be, and the category profile exists so that the correlation is
 visible: both live under "momentum", and a bar that scores well there scored well on one thing.
 
 **Deliberately excluded:** RSI exiting oversold. That is a mean-reversion setup and it
-contradicts a trend-following ribbon by construction — the two would produce opposing signals on
-the same screen. If it is wanted it belongs in a separate, separately-labelled mode.
+contradicts a trend-following ribbon by construction, since the two would produce opposing
+signals on the same screen. If it is wanted it belongs in a separate, separately-labelled mode.
 
 **Exits** are symmetric: EMA 9 crossing back below EMA 21, or losing a support level. Exits are
-not gated — you leave a position regardless of what the slow pair is doing.
+not gated. You leave a position regardless of what the slow pair is doing.
 
 ## Grading the current bar
 
@@ -100,7 +100,7 @@ merit. The band asks momentum to be positive *and* not stretched, which is what 
 always meant to say; the ceiling on its own said only half of it.
 
 **Why "no resistance overhead" passes rather than reading n/a.** When the profile finds no
-accumulation band above the price, the room to the nearest resistance is not unmeasurable — it is
+accumulation band above the price, the room to the nearest resistance is not unmeasurable. It is
 unbounded, the maximum of the quantity being measured. Marking it `n/a` deleted the strongest
 state the asset can be in from its own exam, and quietly shrank the denominator at the same time.
 Room is therefore infinite and passes, reward-to-risk against a real support is infinite and
@@ -108,10 +108,10 @@ passes, and the checklist prints the reason next to the tick.
 
 **The support side is deliberately not symmetric, and that is worth stating rather than hiding.**
 With no accumulation band *below* the price, reward-to-risk stays `n/a`. One could argue it should
-fail by the same logic — no identifiable stop means unbounded risk. The reason it does not is that
-the two sides answer different questions: room asks *how far can this run before it meets supply*,
-and "nothing above it" is a real, favourable answer; reward-to-risk asks *what do I risk to find
-out*, and "no level to measure against" is an absence of an input, not a bad value of one. The
+fail by the same logic, since no identifiable stop means unbounded risk. The reason it does not
+is that the two sides answer different questions. Room asks how far this can run before it meets
+supply, and "nothing above it" is a real, favourable answer. Reward-to-risk asks what you risk to
+find out, and "no level to measure against" is a missing input, not a bad value of one. The
 consequence is that a name trading below every accumulation zone is scored out of 7 rather than 8,
 which the panel shows. If you would rather it failed, the change is one line in `evalConditions`.
 
@@ -122,9 +122,9 @@ wrong: with eight conditions and two vetoes, almost every day returns "no entry"
 that rejects everything carries no information. This is the same reasoning the companion
 project uses to relax PEG from the canonical 1 to 2. A failed condition now simply fails.
 
-**"EMA 9 above EMA 21" was removed.** It is fully redundant with the fresh-up-cross condition —
-a recent up-cross *means* 9 is above 21 — and would have scored the same fact twice. Eight
-conditions, not nine.
+**"EMA 9 above EMA 21" was removed.** It is fully redundant with the fresh-up-cross condition,
+since a recent up-cross *means* 9 is above 21, and it would have scored the same fact twice.
+Eight conditions, not nine.
 
 **Five days for freshness.** Three misses an entry that developed around a weekend; ten no
 longer describes *now*. The 9/21 pair exists to be fast, and a fortnight-old cross is a move
@@ -132,15 +132,15 @@ already running without you.
 
 ### Not-applicable is not failure
 
-A condition with **no data** — or reward-to-risk when there is no support level to measure risk
-against — is marked `n/a` and **excluded from the denominator**, exactly as in the companion
+A condition with **no data**, or reward-to-risk when there is no support level to measure risk
+against, is marked `n/a` and **excluded from the denominator**, exactly as in the companion
 project's scorecard. The consequence, stated plainly: scores of different assets can have
 different denominators, so `4/7` and `5/8` were measured against different exams. The panel
 always shows the denominator for this reason.
 
 The emphasis on *no data* is the whole rule, because an `n/a` shrinks the denominator and so
 raises the ratio. A value that exists but is bad in a way its threshold cannot express is a
-failure, not an absence — that is why a negative PEG, two negative multiples and negative
+failure, not an absence. That is why a negative PEG, two negative multiples and negative
 shareholder equity all resolve to ✗ with the reason printed, and why "no resistance overhead"
 resolves to ✓ rather than dropping out. See [the room / reward-to-risk note](#three-choices-worth-defending)
 above for the one asymmetry that remains, and why it is deliberate.
@@ -148,14 +148,14 @@ above for the one asymmetry that remains, and why it is deliberate.
 ## Placing the score in context
 
 A raw score answers "do my conditions hold". It does not answer "is that unusual". So the score
-is also expressed as a percentile of the same score computed on **every prior bar** — strictly
-before today, which is not in its own comparison set — over **one year** and **two years**, both
-shown. The median of that reference set is reported as a share of conditions rather than as
+is also expressed as a percentile of the same score computed on **every prior bar**, strictly
+before today, over **one year** and **two years**, both shown. Today is not in its own comparison
+set. The median of that reference set is reported as a share of conditions rather than as
 "x out of y": the historical bars carried their own denominators, so pairing a historical ratio
 with today's denominator prints a score that was never measured.
 
 **Why two windows.** A single lookback is a hidden parameter. Six months of a name in freefall
-contains only low scores, so a mediocre day reads as the 95th percentile — a degenerate
+contains only low scores, so a mediocre day reads as the 95th percentile. That is a degenerate
 reference set, and it degrades exactly at the trend turns where the number matters. Two years
 has the opposite problem: it compares today to a regime that no longer exists. Showing both
 means that when they disagree, the disagreement is itself the finding.
@@ -163,9 +163,9 @@ means that when they disagree, the disagreement is itself the finding.
 **No look-ahead.** Each historical bar's score is computed against volume levels derived from a
 **252-bar window ending at that bar**. Scoring a bar from last year against today's levels would
 feed future information into the past and inflate the percentile. This is enforced by a test:
-**twenty-five bars spread across the series** are each scored twice — once with the full series
-loaded, once with the series truncated so that bar is the last one that exists — and every pair
-must match. A single sample can agree by coincidence; the point of the check is that it cannot
+**twenty-five bars spread across the series** are each scored twice. Once with the full series
+loaded, once with the series truncated so that bar is the last one that exists. Every pair has to
+match. A single sample can agree by coincidence; the point of the check is that it cannot
 agree twenty-five times by coincidence.
 
 **The score does not move when you zoom.** It always uses a fixed 252-bar profile window, so it
@@ -184,7 +184,7 @@ bases coincide.
 ## The fundamental layer
 
 The eight GARP criteria, their thresholds and the sector-applicability rules are taken verbatim
-from the companion project — see its `docs/METHODOLOGY.md` for the source behind each threshold.
+from the companion project. Its `docs/METHODOLOGY.md` has the source behind each threshold.
 Two things are specific to this project:
 
 **Two sources, ranked.** Covered names come from the companion project's committed `data.json`;
@@ -194,30 +194,30 @@ unsanctioned, so it is confined to extending reach: if it changes, free-text loo
 fundamental panel and nothing else is affected. The panel always states which source it used, when
 that source was built, and how long ago that was.
 
-**Staleness is treated as absence — on both paths.** A stale value is more dangerous than a
-missing one, because it looks like data. Culp Inc's newest P/E in the live source is from 2022 —
-real, and four years out of date, because the company has been loss-making since. Multiples and
+**Staleness is treated as absence, on both paths.** A stale value is more dangerous than a
+missing one, because it looks like data. Culp Inc's newest P/E in the live source is from 2022.
+It is a real number, and four years out of date, because the company has been loss-making since. Multiples and
 analyst targets older than **30 days** and statement figures older than **200 days** are discarded
 rather than displayed.
 
 The same two horizons now apply to the pipeline snapshot, measured against its own build date. The
 guard used to live only on the live path while the panel's note claimed it for both, so a frozen
-pipeline — a broken Action, a tab left open over a long weekend — kept serving multiples and price
-targets as though they were current. Past 30 days the snapshot's multiples, analyst target, implied
+pipeline, whether from a broken Action or a tab left open over a long weekend, kept serving
+multiples and price targets as though they were current. Past 30 days the snapshot's multiples, analyst target, implied
 value and reference price are dropped and the panel says so; past 200 days the snapshot is refused
 outright and the live path takes over. A build date that cannot be parsed counts as unusable, not
 as fresh.
 
 **A bad number is not a missing number.** A criterion with no data leaves the denominator, so
 mapping a value that is bad *beyond what its threshold can express* to "no data" did not merely
-hide the problem — it raised the score. Three sign traps were live and are now explicit failures
+hide the problem. It raised the score. Three sign traps were live and are now explicit failures
 with the reason printed:
 
 | Trap | What used to happen | Now |
 |---|---|---|
-| Negative PEG — losses, or shrinking EPS | a negative number satisfies `PEG < 2`, so a loss-making company **passed** valuation | fails, threshold restated as `0 < PEG < 2` |
+| Negative PEG, from losses or shrinking EPS | a negative number satisfies `PEG < 2`, so a loss-making company **passed** valuation | fails, threshold restated as `0 < PEG < 2` |
 | Two negative multiples | `Fwd < Trail` ranked them against each other and produced a verdict | fails; the comparison is meaningless without positive earnings |
-| Negative shareholder equity | D/E was set to null, so the worst readable balance sheet **left the exam** | fails; threshold restated as `0 ≤ D/E < 1.5`, and both spellings of the fact are caught — `Infinity` from the live path's own division, and a negative ratio straight from the pipeline |
+| Negative shareholder equity | D/E was set to null, so the worst readable balance sheet **left the exam** | fails; threshold restated as `0 ≤ D/E < 1.5`, and both spellings of the fact are caught: `Infinity` from the live path's own division, and a negative ratio straight from the pipeline |
 
 **A stale snapshot cannot be cached into freshness.** The projected fundamental object used to be
 memoised per symbol, which froze its age at whatever it was the first time you looked. The
@@ -231,7 +231,7 @@ is derived from the SIC code in the company's SEC submissions: 6000–6799 → F
 coarser than GICS and the panel labels it as SIC-derived.
 
 Two caveats on that call. SEC's fair-access policy asks requests to declare a User-Agent with
-contact details, and a browser will not let a page set that header — so this one request goes out
+contact details, and a browser will not let a page set that header, so this one request goes out
 with the browser's own. It is a best-effort enrichment of a single field and every failure path
 returns nothing, but it is the one call here that is not fully within its source's terms. And when
 it does return nothing, the sector is unknown: `Rule of 40` correctly does not apply, but the
