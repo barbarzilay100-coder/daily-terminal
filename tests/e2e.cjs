@@ -739,7 +739,7 @@ server.listen(PORT, () => {
   console.log('\nCULP:', FC.txt.slice(0,230));
   ck('LIVE PATH works for a ticker outside your 126', /stockanalysis \(live\)/.test(FC.txt), FC.txt.slice(0,60));
   ck('sector recovered from SEC SIC', /sector via SEC SIC 2211/.test(FC.txt), FC.txt.slice(0,150));
-  ck('the out-of-bucket sector is stated in Hebrew, not printed as the raw token "other"',
+  ck('the out-of-bucket sector is spelled out with its reason, not printed as the raw token "other"',
      /Sector\s+Other \(not financial, not a growth sector\)/.test(FC.txt) && !/Sector\s+other\b/.test(FC.txt),
      FC.txt.slice(0,180));
   ck('a textile mill is not a growth sector, so Rule of 40 is skipped',
