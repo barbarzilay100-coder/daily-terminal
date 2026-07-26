@@ -57,6 +57,11 @@ npm test                                          # node tests/e2e.cjs
 
 There is no lint step and no build step. `npm test` is the whole gate.
 
+**The assertion count is quoted in the README twice** — in the "Skills demonstrated" table and
+in the Tests section. Adding or removing assertions means editing both, in the same commit. It
+went stale once already: the suite reached 157 while the README still claimed 148, in a project
+whose whole argument is verification discipline.
+
 ## Architecture Decisions
 
 - **One file, no build.** The deliverable is a link a recruiter clicks. A build step is a way for that link to break.
