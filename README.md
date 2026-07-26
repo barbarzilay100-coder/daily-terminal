@@ -2,9 +2,9 @@
 
 [![tests](https://github.com/barbarzilay100-coder/daily-terminal/actions/workflows/test.yml/badge.svg)](https://github.com/barbarzilay100-coder/daily-terminal/actions/workflows/test.yml)
 
-Daily technical research on any US stock or crypto pair, with the company's fundamental
-scorecard read beside it. Support and resistance are computed from where volume actually
-traded, not drawn by eye.
+Daily technical research on any US stock, with the company's fundamental scorecard read
+beside it. Support and resistance are computed from where volume actually traded, not
+drawn by eye.
 
 ### ▶ [Open the live terminal](https://barbarzilay100-coder.github.io/daily-terminal/)
 
@@ -12,7 +12,7 @@ No sign-up and no API key — it is one HTML file and it fetches its own data.
 
 ![The terminal on ORCL: candles with the moving-average ribbon, volume-profile levels in blue, volume and RSI in their own panes](docs/screenshot.png)
 
-Type a symbol and you get the chart with a fixed indicator set, deterministic support and
+Type a ticker and you get the chart with a fixed indicator set, deterministic support and
 resistance derived from the volume-by-price histogram, a graded assessment of the current bar
 against a defined checklist, and the company's GARP scorecard beside it.
 
@@ -92,9 +92,8 @@ says that alone.
 
 Everything is computed in the browser. There is no pipeline and no stored state.
 
-**Prices.** `api.stockanalysis.com` for stocks (five years of daily OHLCV, keyless, CORS-open)
-and `data-api.binance.vision` for crypto pairs. The chart opens on roughly the last trading
-year and keeps the rest for zooming out.
+**Prices.** `api.stockanalysis.com` — five years of daily OHLCV, keyless and CORS-open. The
+chart opens on roughly the last trading year and keeps the rest for zooming out.
 
 **Indicators.** Computed in `index.html`: SMA, EMA seeded from a simple average, Wilder RSI —
 the same smoothing TradingView uses — and the volume-by-price histogram. The chart library is
@@ -146,4 +145,4 @@ historical score. One sample can agree by coincidence; twenty-five cannot.
 
 ## Stack
 
-Vanilla JS · Lightweight Charts · stockanalysis.com · Binance · SEC EDGAR · Playwright
+Vanilla JS · Lightweight Charts · stockanalysis.com · SEC EDGAR · Playwright
