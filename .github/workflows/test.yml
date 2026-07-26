@@ -1,0 +1,39 @@
+# Runs the end-to-end suite on every push, so "148 assertions" is a fact anyone can
+# check rather than a claim in the README.
+#
+# This can run unattended because the suite is hermetic: it serves index.html from a
+# local port, answers every outbound request from the recorded fixtures, and freezes
+# the clock to the date those fixtures were recorded. No network, no market data, no
+# date arithmetic against the real calendar - so a red run means the code changed.
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install
+
+      # --with-deps pulls the system libraries headless Chromium needs on a bare runner
+      - run: npx playwright install --with-deps chromium
+
+      - run: node tests/e2e.cjs
+
+      # the suite screenshots itself as it goes; keep them when something breaks
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: tests/.tmp/*.png
+          if-no-files-found: ignore
