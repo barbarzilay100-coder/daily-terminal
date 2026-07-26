@@ -1,10 +1,18 @@
 /* Builds an offline copy of index.html for the e2e test.
  *
- * Two substitutions, and nothing else — the app code under test is byte-identical
+ * Three substitutions, and nothing else — the app code under test is byte-identical
  * to what ships:
  *   1. the Lightweight Charts CDN <script> is repointed at the vendored copy
  *   2. window.fetch is wrapped so every outbound URL resolves to a captured
  *      fixture instead of the network
+ *   3. Date.now() is frozen to the moment the fixtures were recorded
+ *
+ * (3) is not a convenience. The staleness guard compares fixture timestamps against
+ * Date.now(), so with a live clock the fixtures rot: PLBC's P/E is dated 24/07/2026
+ * and crosses the 30-day horizon a month after recording, at which point assertions
+ * about its GARP score fail with the source unchanged. The README's claim is that the
+ * suite does not move with the market — it must not move with the calendar either.
+ * If you re-record the fixtures, move RECORDED_AT with them.
  *
  * The fixtures are real recorded API responses (see fixtures/data/), so the test
  * exercises the actual payload shapes — including the awkward ones, like CULP's
@@ -16,10 +24,17 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const CDN = 'https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js';
+const RECORDED_AT = '2026-07-26T12:00:00Z';   // see fixtures/README.md
 
 const STUB = `<script>
 (function(){
   const real = window.fetch;
+
+  /* freeze the clock the staleness guard reads; new Date(x) is untouched because
+     the app parses real timestamps with it */
+  const FROZEN = Date.parse(${JSON.stringify(RECORDED_AT)});
+  Date.now = () => FROZEN;
+  window.__FROZEN_NOW = FROZEN;
   const HISTORY = { ORCL:'./data/orcl-history.json', CULP:'./data/culp-history.json',
                     PLBC:'./data/plbc-history.json' };
   const LIVE    = { CULP:'culp', PLBC:'plbc' };          // tickers with captured fundamentals
@@ -69,9 +84,17 @@ const STUB = `<script>
       __evalConditions:evalConditions, __scoreAll:scoreAll, __buildHistory:buildHistory,
       __median:median, __pctlOf:pctlOf, __heDate:heDate,
       __garp:garp, __criterionApplies:criterionApplies, __verdictOf:verdictOf, __freshVal:freshVal,
-      __COND:COND, __LEVEL_COLOR:LEVEL_COLOR,
+      __fundFromUniverse:fundFromUniverse, __universeAge:universeAge, __universeUsable:universeUsable,
+      __ageDays:ageDays, __dateLabel:dateLabel,
+      __COND:COND, __LEVEL_COLOR:LEVEL_COLOR, __resetView:resetView,
       __PROFILE_LOOKBACK:PROFILE_LOOKBACK, __FRESH_DAYS:FRESH_DAYS,
+      __FRESH_PRICE_DAYS:FRESH_PRICE_DAYS, __FRESH_STMT_DAYS:FRESH_STMT_DAYS,
+      __RSI_LO:RSI_LO, __RSI_HI:RSI_HI,
       __setBARS:v => { BARS = v; }, __paintSeries:paintSeries,
+      __load:load, __renderAssessment:renderAssessment, __renderLevels:renderLevels,
+      __setUnivMeta:m => { UNIV_META = m; }, __getUnivMeta:() => UNIV_META,
+      __clearFundCache:() => { for (const k in fundCache) delete fundCache[k]; },
+      __SECTOR_LABEL:SECTOR_LABEL,
     });
   } catch (e){ window.__hookErr = e.message; } }, 50));
 })();
@@ -82,11 +105,18 @@ function build(outDir){
   fs.mkdirSync(outDir, { recursive: true });
   let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   if (!html.includes(CDN)) throw new Error('CDN script tag not found in index.html — did the version change?');
-  html = html.replace(CDN, './lwc.js');
+  /* Swap the whole <script> element, attributes and all — the shipped tag carries an
+     SRI hash for the CDN copy, which by definition will not match a local file. */
+  const tagRe = /<script[^>]*src="[^"]*lightweight-charts[^"]*"[^>]*>\s*<\/script>/;
+  if (!tagRe.test(html)) throw new Error('could not anchor the fetch stub');
   const tag = '<script src="./lwc.js"></script>';
-  if (!html.includes(tag)) throw new Error('could not anchor the fetch stub');
-  html = html.replace(tag, tag + '\n' + STUB);
+  html = html.replace(tagRe, tag + '\n' + STUB);
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
+  /* index.html's first act is to check that the chart library loaded and to explain
+     itself if it did not. The stub above always supplies the library, so that branch
+     would never run under test; this variant points the tag at a file that is not
+     there, which is what a blocked CDN or a failed SRI check looks like to the page. */
+  fs.writeFileSync(path.join(outDir, 'no-lib.html'), html.replace('src="./lwc.js"', 'src="./absent.js"'));
   fs.copyFileSync(path.join(__dirname, 'fixtures', 'lwc.js'), path.join(outDir, 'lwc.js'));
   fs.writeFileSync(path.join(outDir, 'favicon.ico'), '');
   // symlink the fixtures so the served tree can reach them without copying 1MB

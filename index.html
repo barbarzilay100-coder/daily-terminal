@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Technical Terminal — Daily</title>
-<script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"
+        integrity="sha384-q1KYLSKHgBnW5tWYGGR8+6YV4/iPy31dILoF2I1OD7XiVUvHEp/TaxIQVmB0j3R2"
+        crossorigin="anonymous"></script>
 <style>
   :root{
     --bg:#0d1117; --panel:#151b23; --line:#262d38; --line2:#30363d;
@@ -70,12 +72,58 @@
   #veil .big{font-size:15px; color:var(--ink); margin-bottom:6px}
   #veil .why{color:var(--dim); max-width:520px}
 
-  footer{border-top:1px solid var(--line); padding:14px 18px 18px}
+  /* Three sections, each visibly its own thing. Before this they ran together at
+     one type size, so the eye had nowhere to land. */
+  footer{border-top:1px solid var(--line); padding:0 18px 24px}
+  .sec{padding:17px 0 3px}
+  .sec + .sec{border-top:1px solid var(--line)}
   .lv-head{
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    font-size:12.5px; color:var(--dim); margin-bottom:11px;
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+    font-size:12px; color:var(--dim); margin-bottom:11px;
   }
-  .lv-head b{color:var(--ink); font-weight:600; font-size:13px}
+  .lv-head b{color:var(--ink); font-weight:600; font-size:14.5px; letter-spacing:.2px;
+             margin-inline-end:2px}
+
+  /* The one number a section leads with. Proportional figures, not tabular —
+     equal-width digits read loose at this size. */
+  .hero{display:flex; align-items:baseline; gap:9px; margin:7px 0 11px}
+  .hero b{font-size:42px; font-weight:600; line-height:1; letter-spacing:-.5px;
+          font-variant-numeric:proportional-nums}
+  .hero span{font-size:12.5px; color:var(--dim)}
+
+  /* One fact per line: name at the start, value at the end, hairline between. */
+  .ln{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    padding:5px 0; border-bottom:1px solid #1b212a; font-size:12.5px; line-height:1.5;
+  }
+  .ln:last-child{border-bottom:0}
+  .ln .n{display:flex; align-items:baseline; gap:7px; min-width:0}
+  .ln .v{display:flex; align-items:center; gap:8px; flex:none;
+         color:var(--dim); font-size:12px; direction:ltr; unicode-bidi:isolate}
+
+  /* A category's share of its own conditions, as a track rather than a fraction
+     the reader has to divide in their head. */
+  .meter{width:46px; height:4px; border-radius:2px; background:#242b35; flex:none; overflow:hidden}
+  .meter i{display:block; height:100%; background:#6e7681; border-radius:2px}
+  .meter.full i{background:var(--up)}
+  .meter.none i{background:var(--down)}
+
+  /* The method text is the reason to trust the numbers, but it was a third of the
+     screen in 11px grey. It stays on the page, folded, one click away. */
+  details.method{margin:13px 0 2px}
+  details.method:has(> div:empty){display:none}
+  details.method > summary{
+    cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:6px;
+    font-size:11.5px; color:#6e7681; padding:3px 0;
+  }
+  details.method > summary::-webkit-details-marker{display:none}
+  details.method > summary::before{content:'▸'; font-size:9px}
+  details.method[open] > summary::before{content:'▾'}
+  details.method > summary:hover{color:var(--dim)}
+  details.method > div{
+    font-size:11.5px; color:#6e7681; line-height:1.8; margin-top:8px;
+    padding-inline-start:13px; border-inline-start:2px solid var(--line);
+  }
   .lv{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
   .cell{
     background:var(--panel); border:1px solid var(--line); border-radius:9px;
@@ -90,15 +138,15 @@
 
   /* status strip — denser than the level cards so the chart keeps its height */
   .cell.st{padding:9px 12px}
-  .cell.st .c-px{font-size:15px; font-weight:600; text-align:start; direction:rtl; margin-top:2px}
-  .cell.st .c-meta{text-align:start; direction:rtl; font-size:11.5px; line-height:1.6}
   .cell.st .mono{direction:ltr; unicode-bidi:isolate; font-family:ui-monospace,monospace; font-size:11.5px}
-  .ok{color:var(--up)} .no{color:var(--down)}
-  .c-lbl{font-size:11.5px; color:var(--dim); letter-spacing:.3px; text-transform:uppercase}
-  .c-px{font-size:21px; font-weight:600; margin-top:3px; direction:ltr; text-align:right; font-variant-numeric:tabular-nums}
+  .ok{color:var(--up)} .no{color:var(--down)} .ok-neutral{color:var(--ink)}
+  .c-lbl{font-size:11px; color:#6e7681; letter-spacing:.4px; text-transform:uppercase}
+  .c-px{font-size:26px; font-weight:600; margin-top:4px; direction:ltr; text-align:right;
+         font-variant-numeric:proportional-nums; letter-spacing:-.3px}
   .c-meta{font-size:12px; color:var(--dim); margin-top:3px; direction:ltr; text-align:right}
   .c-none{font-size:13px; color:var(--dim); margin-top:6px; line-height:1.6}
   .note{font-size:11.5px; color:#6e7681; margin-top:11px; line-height:1.7}
+  .cell.st{padding:12px 14px}
 </style>
 </head>
 <body>
@@ -142,39 +190,56 @@
 </div>
 
 <footer>
-  <div class="lv-head"><b>מצב הנקודה הנוכחית</b><span id="st-sub">—</span></div>
-  <div class="lv" id="st"></div>
+  <section class="sec">
+    <div class="lv-head"><b>מצב הנקודה הנוכחית</b><span id="st-sub">—</span></div>
+    <div class="lv" id="st"></div>
+  </section>
 
-  <div class="lv-head" style="margin-top:15px">
-    <b>רמות מפרופיל נפח</b>
-    <span id="lv-win">—</span>
-  </div>
-  <div class="lv" id="lv"></div>
-  <div class="note" id="lv-note"></div>
+  <section class="sec">
+    <div class="lv-head"><b>רמות מפרופיל נפח</b><span id="lv-win">—</span></div>
+    <div class="lv" id="lv"></div>
+    <details class="method"><summary>איך הרמות והציון מחושבים</summary><div id="lv-note"></div></details>
+  </section>
 
-  <div class="lv-head" style="margin-top:15px">
-    <b>פונדמנטלי</b>
-    <span id="fu-sub">—</span>
-  </div>
-  <div class="lv" id="fu"></div>
-  <div class="note" id="fu-note"></div>
+  <section class="sec">
+    <div class="lv-head"><b>פונדמנטלי</b><span id="fu-sub">—</span></div>
+    <div class="lv" id="fu"></div>
+    <details class="method"><summary>מקורות, טריות ומגבלות</summary><div id="fu-note"></div></details>
+  </section>
 </footer>
 
 <script>
 'use strict';
+
+/* The chart library is the one hard dependency. If the CDN is unreachable — or the
+   SRI hash does not match — say so instead of dying on a ReferenceError and leaving
+   a blank page, which is the one failure state this page used not to explain. */
+if (typeof LightweightCharts === 'undefined'){
+  document.getElementById('veil').className = 'on';
+  document.getElementById('veil-t').textContent = 'ספריית הגרפים לא נטענה';
+  document.getElementById('veil-w').textContent =
+    'הדף טוען את Lightweight Charts מ-unpkg.com עם בדיקת שלמות (SRI). '
+    + 'או שאין חיבור, או שהקובץ בשרת השתנה ולכן נדחה. רענן, או בדוק את החיבור.';
+  throw new Error('LightweightCharts failed to load');
+}
 const LC = LightweightCharts;
 
 /* ─────────────────────────── indicators ─────────────────────────── */
 
+/* Counts consecutive non-null inputs rather than trusting the index, because
+   this is also called on the RSI series, whose first n-1 values are null. The
+   index-based version emitted partial sums divided by n for those bars — a
+   ramp from ~3 up to the real value, drawn on the chart as if it were an
+   average. A window is reported only once n real values are in it. */
 function sma(vals, n){
   const out = new Array(vals.length).fill(null);
-  let sum = 0;
+  let sum = 0, cnt = 0;
   for (let i = 0; i < vals.length; i++){
     const v = vals[i];
-    if (v == null){ sum = 0; continue; }
-    sum += v;
-    if (i >= n) sum -= vals[i-n];
-    if (i >= n-1) out[i] = sum / n;
+    if (v == null){ sum = 0; cnt = 0; continue; }
+    sum += v; cnt++;
+    if (cnt > n){ sum -= vals[i-n]; cnt = n; }
+    if (cnt === n) out[i] = sum / n;
   }
   return out;
 }
@@ -231,10 +296,10 @@ function profileLevels(bars, price, opt){
   const SEP  = (opt && opt.sepPct) || 1.5;   // min % gap between two levels
   const STR  = (opt && opt.minStrength) || 1.0;  // x mean bin volume
 
-  if (!bars.length) return { nodes:[], res:[], sup:null };
+  if (!bars.length) return { nodes:[], res:[], sup:null, total:0 };
   let lo = Infinity, hi = -Infinity;
   for (const b of bars){ if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; }
-  if (!(hi > lo)) return { nodes:[], res:[], sup:null };
+  if (!(hi > lo)) return { nodes:[], res:[], sup:null, total:0 };
 
   const w = (hi - lo) / BINS;
   const hist = new Float64Array(BINS);
@@ -256,11 +321,21 @@ function profileLevels(bars, price, opt){
 
   let total = 0;
   for (let i = 0; i < BINS; i++) total += hist[i];
+  /* No volume in the window means no volume profile. Without this guard mean is 0,
+     every bin satisfies `>= mean` and the function invents a full set of levels out
+     of nothing — the exact failure the empty states exist to prevent. Some feeds do
+     return 0 or null volume, so this is reachable, not theoretical. */
+  if (!(total > 0)) return { nodes:[], res:[], sup:null, total:0, novol:true };
   const mean = total / BINS;
 
+  /* The first and last bin are candidates too: a peak is compared only against the
+     neighbours it has. Excluding them silently dropped an accumulation band that
+     happened to sit at the extreme of the range. */
   const peaks = [];
-  for (let i = 1; i < BINS-1; i++){
-    if (hist[i] >= hist[i-1] && hist[i] >= hist[i+1] && hist[i] >= mean*STR)
+  for (let i = 0; i < BINS; i++){
+    const L = i > 0        ? hist[i-1] : -Infinity;
+    const R = i < BINS - 1 ? hist[i+1] : -Infinity;
+    if (hist[i] > 0 && hist[i] >= L && hist[i] >= R && hist[i] >= mean*STR)
       peaks.push({ p: lo + (i+0.5)*w, s: hist[i] });
   }
   // strongest first, then drop anything too close to a level already taken
@@ -348,7 +423,8 @@ async function fetchStock(sym){
   if (!rows.length) throw new Error('no rows returned');
   return rows.map(x => ({ t:x.t, o:+x.o, h:+x.h, l:+x.l, c:+x.c, v:+x.v }))
              .filter(b => isFinite(b.c))
-             .sort((a,b) => a.t < b.t ? -1 : 1);
+             /* equal timestamps must compare 0, or the comparator contradicts itself */
+             .sort((a,b) => a.t < b.t ? -1 : a.t > b.t ? 1 : 0);
 }
 
 async function fetchCrypto(sym){
@@ -360,7 +436,7 @@ async function fetchCrypto(sym){
   return k.map(a => ({
     t: new Date(a[0]).toISOString().slice(0,10),
     o:+a[1], h:+a[2], l:+a[3], c:+a[4], v:+a[5]
-  }));
+  })).filter(b => isFinite(b.c));   // same guard the stock path has; a bad row printed NaN
 }
 
 /* ──────────────────────────── chart ──────────────────────────── */
@@ -440,10 +516,44 @@ let BARS = [];
 let IND  = null;          // every indicator series, aligned to BARS by index
 let TECH = null;          // the technical read, published for the fundamental layer
 let priceLines = [];
+/* Every load takes a ticket. Anything asynchronous checks its ticket before it
+   paints, so a slow response for a symbol you have already navigated away from
+   is dropped instead of overwriting the screen. */
+let LOAD_ID = 0;
 const $ = id => document.getElementById(id);
+
+/* symbols reach innerHTML, and they come from a free-text box */
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 /* ISO -> Israeli day/month/year */
 const heDate = iso => { const p = String(iso).slice(0,10).split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
+
+/* whole days between an arbitrary date string and now; null if unparseable */
+function ageDays(when){
+  if (!when) return null;
+  const t = Date.parse(when);
+  return isFinite(t) ? Math.floor((Date.now() - t) / 86400000) : null;
+}
+
+/* One date format in the panel. The pipeline stamps its snapshot "Jul 25, 2026";
+   everything else is ISO. Both come out dd/mm/yyyy, and anything unparseable is
+   shown as it arrived rather than as NaN/NaN/NaN.
+
+   The two formats must not be routed through the same parser. "YYYY-MM-DD" parses as
+   UTC midnight while "Jul 25, 2026" parses as LOCAL midnight, so converting either
+   one to ISO and slicing shifts the date by a day on one side of UTC or the other —
+   in Asia/Jerusalem the snapshot read 24/07 for a file stamped the 25th. ISO strings
+   are therefore sliced as text, with no clock involved, and human dates are formatted
+   from the same local fields they were parsed into. */
+function dateLabel(when){
+  const s = String(when);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return heDate(s);
+  const t = Date.parse(s);
+  if (!isFinite(t)) return s;
+  const d = new Date(t), p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`;
+}
 
 /* 5 years are fetched so you can zoom out, but 5y of dailies on one screen is
    unreadable — open on roughly the last trading year instead. */
@@ -465,13 +575,15 @@ function fmt(n){
 
 function paintQuote(sym){
   const last = BARS[BARS.length-1], prev = BARS[BARS.length-2];
+  const el = $('qch');
   $('qsym').textContent = sym;
   $('qpx').textContent  = fmt(last.c);
   if (prev){
     const d = last.c - prev.c, p = d / prev.c * 100;
-    const el = $('qch');
     el.textContent = `${d >= 0 ? '+' : ''}${fmt(d)} (${d >= 0 ? '+' : ''}${p.toFixed(2)}%)`;
     el.className = 'q-ch ' + (d >= 0 ? 'pos' : 'neg');
+  } else {
+    el.textContent = ''; el.className = 'q-ch';
   }
 }
 
@@ -533,15 +645,30 @@ function renderLevels(){
     to   = Math.min(BARS.length - 1, Math.ceil(vr.to));
   }
   const win = BARS.slice(from, to + 1);
-  if (win.length < 20){ $('lv-win').textContent = 'טווח צר מדי לחישוב'; return; }
+  /* clear first: an early return used to leave the previous window's lines drawn
+     on the chart and its cards in the panel, under a message saying nothing could
+     be computed */
+  clearLines();
+  if (win.length < 20){
+    $('lv').innerHTML = '';
+    $('lv-win').textContent = 'טווח צר מדי לחישוב';
+    $('lv-note').textContent = '';
+    brkMarkers.setMarkers([]);
+    return;
+  }
 
-  const price = BARS[BARS.length - 1].c;
-  const { nodes, res, sup } = profileLevels(win, price);
+  /* Reference price = the last bar IN VIEW, not the last bar in the series. Pan
+     back to 2022 and "resistance" must mean above the price as it was then; using
+     today's close classified a 2022 histogram against a price outside the window. */
+  const anchor = win[win.length - 1];
+  const price = anchor.c;
+  const live  = to === BARS.length - 1;
+  const { nodes, res, sup, novol } = profileLevels(win, price);
 
   $('lv-win').textContent =
-    `חלון: ${heDate(win[0].t)} → ${heDate(win[win.length-1].t)} · ${win.length} נרות · ${nodes.length} צבירים זוהו`;
+    `חלון: ${heDate(win[0].t)} → ${heDate(anchor.t)} · ${win.length} נרות · ${nodes.length} צבירים זוהו`
+    + (live ? '' : ` · מדוד מול הסגירה ב-${heDate(anchor.t)} (${fmt(price)}), הנר האחרון בחלון`);
 
-  clearLines();
   const html = [];
 
   res.forEach((n, i) => {
@@ -551,9 +678,12 @@ function renderLevels(){
       axisLabelVisible:true, title:`R${i+1}`,
     }));
   });
+  const noneWhy = novol
+    ? 'אין נתוני נפח בחלון הזה, ולכן אי אפשר לחשב פרופיל נפח בכלל'
+    : null;
   for (let i = res.length; i < 2; i++)
     html.push(`<div class="cell none"><div class="c-lbl">התנגדות ${i+1}</div>
-      <div class="c-none">אין צביר נפח מעל המחיר בחלון הזה</div></div>`);
+      <div class="c-none">${noneWhy || 'אין צביר נפח מעל המחיר בחלון הזה'}</div></div>`);
 
   if (sup){
     const pct = (sup.p / price - 1) * 100;
@@ -568,7 +698,7 @@ function renderLevels(){
     }));
   } else {
     html.push(`<div class="cell none"><div class="c-lbl">תמיכה</div>
-      <div class="c-none">אין צביר נפח מתחת למחיר — הנכס נסחר מתחת לכל אזורי הצבירה בחלון</div></div>`);
+      <div class="c-none">${noneWhy || 'אין צביר נפח מתחת למחיר — הנכס נסחר מתחת לכל אזורי הצבירה בחלון'}</div></div>`);
   }
 
   $('lv').innerHTML = html.join('');
@@ -591,12 +721,14 @@ function renderLevels(){
 
   $('lv-note').textContent =
     'רמות: נפח כל יום מתפזר אחיד על טווח הגבוה-נמוך שלו · 120 רצועות · מרווח מינימלי 1.5% · '
-    + 'רמה = שיא מקומי בהיסטוגרמה מעל הנפח הממוצע לרצועה. הרמות והפריצה מחושבות על הטווח הנראה ומתעדכנות בזום. '
+    + 'רמה = שיא מקומי בהיסטוגרמה מעל הנפח הממוצע לרצועה. בלי נפח בחלון אין פרופיל ואין רמות — לא רמה משוערת. '
+    + 'הרמות והפריצה מחושבות על הטווח הנראה ומתעדכנות בזום, מול הסגירה של הנר האחרון בחלון. '
     + `ציון הנקודה, לעומת זאת, תמיד מחושב על חלון קבוע של ${PROFILE_LOOKBACK} נרות ולכן אינו זז בזום. `
-    + `האחוזון משווה את היום להיסטוריה של אותו נכס בלבד — "חריג עבור הנכס", לא "טוב באופן מוחלט" — `
+    + `האחוזון משווה את היום לכל הנרות שקדמו לו באותו נכס בלבד — "חריג עבור הנכס", לא "טוב באופן מוחלט" — `
     + 'וכל ציון היסטורי מחושב מול רמות מחלון שמסתיים באותו נר, בלי הצצה לעתיד. '
     + 'שים לב שמצבי מגמה נמשכים שבועות, כלומר הימים אינם בלתי-תלויים: מאות ימים הם עשרות אפיזודות עצמאיות בלבד, '
-    + 'ולכן הביטחון באחוזון קטן ממה שמספר הימים מרמז. תנאי שאינו ישים מסומן n/a ואינו נספר במכנה.';
+    + 'ולכן הביטחון באחוזון קטן ממה שמספר הימים מרמז. תנאי חסר-נתון מסומן n/a ואינו נספר במכנה; '
+    + 'לעומת זאת היעדר התנגדות מעל המחיר הוא מרווח בלתי מוגבל — כלומר ✓, לא n/a.';
 }
 
 /* levels follow the view, so they recompute on pan/zoom (debounced) */
@@ -625,6 +757,8 @@ const FRESH_DAYS       = 5;    // a 9/21 cross older than a week is not "now"
 const PROFILE_LOOKBACK = 252;  // bars each profile (today's and historical) is built on
 const ROOM_MIN_PCT     = 3;
 const RR_MIN           = 2;
+const RSI_LO           = 50;   // below this, momentum is not a point in favour
+const RSI_HI           = 70;   // at or above this, the move is stretched
 const PCT_WINDOWS = [{ n:252, label:'שנה' }, { n:504, label:'שנתיים' }];
 
 const COND = [
@@ -632,7 +766,10 @@ const COND = [
   { key:'above', cat:'trend',    label:'מחיר מעל SMA 50' },
   { key:'fresh', cat:'trigger',  label:'טריגר 9/21 מעלה ב-' + FRESH_DAYS + ' הימים האחרונים' },
   { key:'rsiMa', cat:'momentum', label:'RSI מעל ה-SMA שלו' },
-  { key:'rsiOb', cat:'momentum', label:'RSI מתחת ל-70' },
+  /* "below 70" alone was a free point for anything in freefall: RSI 25 is not
+     overbought either. The band asks momentum to be positive AND not stretched,
+     which is what the condition was meant to say. */
+  { key:'rsiOb', cat:'momentum', label:`RSI בין ${RSI_LO} ל-${RSI_HI}` },
   { key:'vol',   cat:'momentum', label:'נפח מעל ממוצע 50' },
   { key:'room',  cat:'geometry', label:'מרווח מעל ' + ROOM_MIN_PCT + '% עד ההתנגדות' },
   { key:'rr',    cat:'geometry', label:'יחס סיכוי-סיכון ' + RR_MIN + ':1 ומעלה' },
@@ -656,23 +793,28 @@ function freshUpFlags(){
   return fresh;
 }
 
-/* null = not applicable; it drops out of the denominator, never counted as a fail */
+/* null = not applicable; it drops out of the denominator, never counted as a fail.
+   Note what is NOT null: no resistance overhead is not "unmeasurable", it is the
+   maximum of the thing being measured. Marking it n/a deleted the strongest state
+   the asset can be in from its own exam. */
 function evalConditions(i, fresh, lv){
   const c = BARS[i].c;
   const nearRes = lv.res.length ? lv.res[0].p : null;
-  const room = nearRes != null ? (nearRes - c) / c * 100 : null;
+  /* nothing overhead in the window -> unlimited room, and unlimited reward per
+     unit of risk. Both pass; the panel prints "∞" rather than a fake number. */
+  const room = nearRes != null ? (nearRes - c) / c * 100 : Infinity;
   const risk = lv.sup ? (c - lv.sup.p) / c * 100 : null;
-  const rr   = (room != null && risk != null && risk > 0) ? room / risk : null;
+  const rr   = (risk != null && risk > 0) ? room / risk : null;
   return {
     gate:  (IND.s50[i] != null && IND.s100[i] != null) ? IND.s50[i] > IND.s100[i] : null,
     above: (IND.s50[i] != null) ? c > IND.s50[i] : null,
     fresh: fresh[i],
     rsiMa: (IND.rsi[i] != null && IND.rsiMa[i] != null) ? IND.rsi[i] > IND.rsiMa[i] : null,
-    rsiOb: (IND.rsi[i] != null) ? IND.rsi[i] < 70 : null,
+    rsiOb: (IND.rsi[i] != null) ? (IND.rsi[i] >= RSI_LO && IND.rsi[i] < RSI_HI) : null,
     vol:   (IND.volAvg[i] != null) ? BARS[i].v > IND.volAvg[i] : null,
-    room:  room != null ? room > ROOM_MIN_PCT : null,
+    room:  room > ROOM_MIN_PCT,
     rr:    rr != null ? rr >= RR_MIN : null,
-    _room: room, _risk: risk, _rr: rr,
+    _room: room, _risk: risk, _rr: rr, _noRes: nearRes == null,
   };
 }
 
@@ -683,13 +825,17 @@ function tally(res, keys){
 }
 const scoreAll = res => tally(res, COND.map(c => c.key));
 
-/* rolling history — the expensive bit, run once per symbol, not per zoom */
+/* Rolling history — the expensive bit, run once per symbol, not per zoom.
+   The reference set is every PRIOR bar. Today is excluded from it: a percentile
+   answers "how does today compare with what came before", and letting today sit
+   in its own comparison set is not what the method claims to do. The loop used to
+   run to n-1 under a comment saying it excluded today. */
 function buildHistory(maxBack){
   const fresh = freshUpFlags();
-  const n = BARS.length;
-  const start = Math.max(PROFILE_LOOKBACK, n - maxBack);
+  const last = BARS.length - 1;                              // today
+  const start = Math.max(PROFILE_LOOKBACK - 1, last - maxBack);
   const out = [];
-  for (let i = start; i < n; i++){                       // excludes today
+  for (let i = start; i < last; i++){                        // strictly before today
     const lv = profileLevels(BARS.slice(i - PROFILE_LOOKBACK + 1, i + 1), BARS[i].c);
     const s = scoreAll(evalConditions(i, fresh, lv));
     if (s.ratio != null) out.push(s.ratio);
@@ -712,7 +858,21 @@ const mark = v => v === null ? '<span style="color:#6e7681">n/a</span>'
                 : v ? '<span class="ok">✓</span>' : '<span class="no">✗</span>';
 
 function renderAssessment(){
-  if (!IND || BARS.length < PROFILE_LOOKBACK + 5) { $('st').innerHTML = ''; return; }
+  /* Too little history to grade against. This used to blank the panel and return,
+     leaving TECH, the sub-line and the ribbon markers holding the PREVIOUS symbol —
+     so the fundamental layer would then pair this company's business with the last
+     company's chart. Everything the assessment owns is cleared, and the reason is
+     stated rather than shown as an empty strip. */
+  if (!IND || BARS.length < PROFILE_LOOKBACK + 5){
+    TECH = null;
+    markers.setMarkers([]);
+    $('st-sub').textContent = '';
+    $('st').innerHTML = `<div class="cell st none">
+      <div class="c-lbl">ציון הנקודה</div>
+      <div class="c-none">צריך לפחות ${PROFILE_LOOKBACK + 5} נרות כדי לדרג את הנקודה מול ההיסטוריה של הנכס.
+      יש ${BARS.length}. הגרף והרמות למטה תקפים.</div></div>`;
+    return;
+  }
   const n = BARS.length, last = n - 1;
 
   const H = buildHistory(Math.max(...PCT_WINDOWS.map(w => w.n)));
@@ -725,38 +885,45 @@ function renderAssessment(){
     const xs = H.ratios.slice(-w.n);
     const p  = pctlOf(xs, sc.ratio), md = median(xs);
     if (p === null) return `<div>אחוזון על ${w.label}: <span style="color:#6e7681">אין די היסטוריה</span></div>`;
-    return `<div>אחוזון על ${w.label}: <b class="mono">${p.toFixed(0)}%</b>`
-         + ` <span style="color:#6e7681">(חציון ${Math.round(md * sc.applicable)} מתוך ${sc.applicable}`
-         + ` · ${xs.length} ימים)</span></div>`;
+    /* the median is shown as a share of the conditions, not as "x מתוך y": the
+       historical bars had their own denominators, so printing today's alongside a
+       historical ratio produced a pair that was never measured together */
+    return `<div class="ln"><span class="n">אחוזון על ${w.label}</span>
+        <span class="v"><b class="mono ok-neutral">${p.toFixed(0)}%</b>
+          <span style="color:#6e7681">חציון ${(md * 100).toFixed(0)}% · ${xs.length} ימים</span></span></div>`;
   }).join('');
 
   const card1 = `<div class="cell st ${sc.ratio >= 0.75 ? 'bull' : sc.ratio >= 0.5 ? 'flat' : 'bear'}">
       <div class="c-lbl">ציון הנקודה</div>
-      <div class="c-px">${sc.passed} מתוך ${sc.applicable} תנאים</div>
-      <div class="c-meta">${rows}</div>
+      <div class="hero"><b>${sc.passed}</b> <span>מתוך ${sc.applicable} תנאים</span></div>
+      <div>${rows}</div>
     </div>`;
 
   /* ---- card 2: where it is strong and where it is weak ---- */
   const prof = CATS.map(ct => {
     const keys = COND.filter(c => c.cat === ct.key).map(c => c.key);
     const t = tally(res, keys);
-    const txt = t.applicable ? `${t.passed}/${t.applicable}` : 'n/a';
-    const cls = !t.applicable ? '' : t.passed === t.applicable ? 'ok' : t.passed === 0 ? 'no' : '';
-    return `<div>${ct.label}: <b class="${cls}">${txt}</b></div>`;
+    const pct = t.applicable ? t.passed / t.applicable * 100 : 0;
+    const cls = !t.applicable ? '' : t.passed === t.applicable ? 'full' : t.passed === 0 ? 'none' : '';
+    return `<div class="ln"><span class="n">${ct.label}</span>
+        <span class="v"><span class="meter ${cls}"><i style="width:${pct}%"></i></span>
+          ${t.applicable ? `${t.passed}/${t.applicable}` : 'n/a'}</span></div>`;
   }).join('');
   const card2 = `<div class="cell st flat">
       <div class="c-lbl">פרופיל לפי קטגוריה</div>
-      <div class="c-meta" style="margin-top:5px">${prof}</div>
+      <div style="margin-top:7px">${prof}</div>
     </div>`;
 
   /* ---- card 3: the whole checklist, passes included ----
      Listing only the failures hid which conditions actually held — for a
      research tool you want to read the full ledger, not just the deficit. */
   const failed = COND.filter(c => res[c.key] === false);
+  const why = k => k === 'room' && res._noRes ? 'מרווח בלתי מוגבל' : '';
   const card3 = `<div class="cell st ${failed.length ? 'bear' : 'bull'}">
       <div class="c-lbl">צ׳ק-ליסט</div>
-      <div class="c-meta" style="margin-top:5px">${
-        COND.map(c => `<div>${mark(res[c.key])} ${c.label}</div>`).join('')
+      <div style="margin-top:7px">${
+        COND.map(c => `<div class="ln"><span class="n">${mark(res[c.key])} <span>${c.label}</span></span>
+          <span class="v">${why(c.key)}</span></div>`).join('')
       }</div>
     </div>`;
 
@@ -776,7 +943,9 @@ function renderAssessment(){
     + (lastX ? ` · טריגר אחרון: 9/21 ${lastX.dir > 0 ? 'מעלה' : 'מטה'},`
              + ` <span class="mono">${heDate(BARS[lastX.i].t)}</span>`
              + ` (לפני ${n - 1 - lastX.i} ימי מסחר)` : '')
-    + (res._rr != null ? ` · סיכוי-סיכון <span class="mono">${res._rr.toFixed(1)}:1</span>` : '');
+    + (res._rr == null ? ''
+       : isFinite(res._rr) ? ` · סיכוי-סיכון <span class="mono">${res._rr.toFixed(1)}:1</span>`
+       : ` · סיכוי-סיכון <span class="mono">∞</span> (אין התנגדות מעל)`);
 
   /* ---- ribbon markers for every cross in the series ---- */
   const m = [];
@@ -808,6 +977,9 @@ const FRESH_PRICE_DAYS = 30;   // pe / fwd pe / target are daily — stale means
 const FRESH_STMT_DAYS  = 200;  // statements are quarterly, a one-quarter lag is normal
 
 const GROWTH_SECTORS = new Set(['Technology', 'Communication Services']);
+/* 'other' means the SIC lookup succeeded and landed outside the three buckets that
+   change the rules — informative, and not something to print untranslated */
+const SECTOR_LABEL = { other: 'אחר — לא פיננסי ולא סקטור צמיחה' };
 
 /* the existing terminal's applicability rules, verbatim */
 function criterionApplies(name, sector){
@@ -817,19 +989,41 @@ function criterionApplies(name, sector){
   return true;
 }
 
-/* the existing terminal's 8 criteria and thresholds, verbatim */
+/* the existing terminal's 8 criteria and thresholds, verbatim.
+
+   One rule added throughout: a value that is bad in a way the threshold cannot
+   express must FAIL, never read as "no data". A criterion with no data leaves the
+   denominator, so mapping "negative equity" or "loss-making" to null did not just
+   hide the problem — it raised the score. Two sign traps were live:
+     PEG  < 2   : a negative PEG (losses, or shrinking EPS) satisfies "< 2".
+     Fwd < Trail: comparing two negative multiples ranks them meaninglessly.
+   Both now resolve to an explicit ✗ with the reason printed. */
 function garp(d){
-  const r40    = (d.revGrowth != null && d.fcfMargin != null) ? d.revGrowth + d.fcfMargin : null;
-  const disc   = (d.forwardPE != null && d.pe != null) ? d.pe - d.forwardPE : null;
+  const r40 = (d.revGrowth != null && d.fcfMargin != null) ? d.revGrowth + d.fcfMargin : null;
+  const hasMult  = d.forwardPE != null && d.pe != null;
+  const multReal = hasMult && d.pe > 0 && d.forwardPE > 0;
+  const disc = hasMult ? (multReal ? d.pe - d.forwardPE : -1) : null;   // -1 = fails, see above
+  const pegBad = d.peg != null && d.peg <= 0;                           // no positive earnings/growth
+  /* negative equity reaches this function two ways: as Infinity from the live path,
+     and as a negative ratio straight from the pipeline. Both are the same fact. */
+  const deBad  = d.debtEquity != null && (!isFinite(d.debtEquity) || d.debtEquity < 0);
   const C = [
     { name:'Revenue Growth',   thr:'> 10%',        val:d.revGrowth,  disp:d.revGrowth  != null ? d.revGrowth.toFixed(1)+'%' : null, pass:v => v > 10 },
     { name:'Rule of 40',       thr:'≥ 40',         val:r40,          disp:r40          != null ? r40.toFixed(0) : null,             pass:v => v >= 40 },
     { name:'FCF Margin',       thr:'> 15%',        val:d.fcfMargin,  disp:d.fcfMargin  != null ? d.fcfMargin.toFixed(1)+'%' : null, pass:v => v > 15 },
     { name:'Net Margin',       thr:'> 15%',        val:d.netMargin,  disp:d.netMargin  != null ? d.netMargin.toFixed(1)+'%' : null, pass:v => v > 15 },
     { name:'Return on Equity', thr:'> 15%',        val:d.roe,        disp:d.roe        != null ? d.roe.toFixed(1)+'%' : null,       pass:v => v > 15 },
-    { name:'Valuation (PEG)',  thr:'< 2',          val:d.peg,        disp:d.peg        != null ? d.peg.toFixed(2) : null,           pass:v => v < 2 },
-    { name:'Fwd Multiple',     thr:'Fwd < Trail',  val:disc,         disp:(d.forwardPE != null && d.pe != null) ? d.forwardPE.toFixed(1)+'x vs '+d.pe.toFixed(1)+'x' : null, pass:v => v > 0 },
-    { name:'Balance Sheet',    thr:'D/E < 1.5',    val:d.debtEquity, disp:d.debtEquity != null ? d.debtEquity.toFixed(2) : null,    pass:v => v < 1.5 },
+    { name:'Valuation (PEG)',  thr:'0 < PEG < 2',  val:d.peg,
+      disp: d.peg == null ? null : pegBad ? 'אין רווח או צמיחה חיוביים' : d.peg.toFixed(2),
+      pass: v => v > 0 && v < 2 },
+    { name:'Fwd Multiple',     thr:'Fwd < Trail',  val:disc,
+      disp: !hasMult ? null
+          : multReal ? d.forwardPE.toFixed(1)+'x vs '+d.pe.toFixed(1)+'x'
+                     : 'מכפיל שלילי — ההשוואה חסרת משמעות',
+      pass: v => v > 0 },
+    { name:'Balance Sheet',    thr:'0 ≤ D/E < 1.5', val:d.debtEquity,
+      disp: d.debtEquity == null ? null : deBad ? 'הון עצמי שלילי' : d.debtEquity.toFixed(2),
+      pass: v => v >= 0 && v < 1.5 },
   ];
   let pass = 0, counted = 0;
   const rows = C.map(c => {
@@ -849,7 +1043,12 @@ const verdictOf = r =>
 
 let UNIV = null;                 // ticker -> company object from data.json
 let UNIV_META = null;
+/* Only the LIVE path is cached, and only for an hour. Caching the projected object
+   froze its freshness at first view, so the "tab left open over a long weekend" case
+   the staleness guard exists for was still open for any symbol already looked at.
+   The universe path is a lookup in memory, so it is simply recomputed every time. */
 const fundCache = Object.create(null);
+const FUND_CACHE_MS = 60 * 60 * 1000;
 
 async function loadUniverse(){
   if (UNIV) return UNIV;
@@ -876,6 +1075,11 @@ async function tsLast(sym, metric){
 /* a stale value is worse than no value: CULP's P/E is a real number from 2022 */
 const freshVal = (o, maxAge) => (o && o.age <= maxAge) ? o.v : null;
 
+/* SEC's fair-access policy asks for a declaring User-Agent. A browser will not let
+   a page set that header, so this request goes out with the browser's own UA. It is
+   a best-effort enrichment for one field and every failure path below returns null,
+   which the panel then states — but it is worth knowing that this is the one call
+   here that is not fully within its source's terms. */
 async function sectorFromSEC(sym){
   try {
     const ri = await fetch(`https://stockanalysis.com/api/symbol/s/${encodeURIComponent(sym.toLowerCase())}/info`);
@@ -921,22 +1125,41 @@ async function fetchFundLive(sym){
     netMargin: freshVal(g.profitMargin,  FRESH_STMT_DAYS),
     roe:       freshVal(g.roe,           FRESH_STMT_DAYS),
     pe, forwardPE: fpe,
-    peg: (pe != null && eg != null && eg > 0) ? pe / eg : null,
+    /* the data exists; it just describes a company with no positive earnings or no
+       growth. That is a failed valuation test, not a missing one — see garp(). */
+    peg: (pe != null && eg != null) ? ((pe > 0 && eg > 0) ? pe / eg : -1) : null,
     pegComputed: true,
-    debtEquity: (debt != null && eq != null && eq > 0) ? debt / eq : null,
+    /* negative equity is the worst readable balance sheet, so it must not read as
+       "no data" and quietly leave the denominator */
+    debtEquity: (debt != null && eq != null) ? (eq > 0 ? debt / eq : Infinity) : null,
     ptAvg: freshVal(g.priceTarget, FRESH_PRICE_DAYS),
     impliedPrice: null, impliedUpside: null,   // needs the whole universe's sector medians
   };
 }
 
+/* age of the committed pipeline snapshot, in days; null if it cannot be read */
+const universeAge = () => ageDays(UNIV_META && UNIV_META.generated);
+/* usable at all? older than the statement horizon and the whole snapshot is refused */
+const universeUsable = () => { const a = universeAge(); return a != null && a <= FRESH_STMT_DAYS; };
+
+/* The staleness rule used to live only on the live path, while the panel's note
+   claimed it for both. A frozen pipeline — a broken Action, a tab left open over a
+   long weekend — kept serving multiples and price targets as if they were current.
+   Same two horizons as the live path, applied to the snapshot's own build date. */
 function fundFromUniverse(c){
+  const age = universeAge();
+  const priceOK = age != null && age <= FRESH_PRICE_DAYS;
+  const keep = v => priceOK ? v : null;
   return {
     src:'universe', srcLabel:'הפייפליין שלך',
-    asof: UNIV_META && UNIV_META.generated, sector: c.sector, sectorNote:null,
+    asof: UNIV_META && UNIV_META.generated, asofAge: age,
+    stalePrice: !priceOK,
+    sector: c.sector, sectorNote:null,
     revGrowth:c.revGrowth, fcfMargin:c.fcfMargin, netMargin:c.netMargin, roe:c.roe,
-    pe:c.pe, forwardPE:c.forwardPE, peg:c.peg, pegComputed:false, debtEquity:c.debtEquity,
-    ptAvg:c.ptAvg, impliedPrice:c.impliedPrice, impliedUpside:c.impliedUpside,
-    impliedFrom:c.impliedFrom, refPrice:c.price, name:c.name,
+    pe:keep(c.pe), forwardPE:keep(c.forwardPE), peg:keep(c.peg), pegComputed:false,
+    debtEquity:c.debtEquity,
+    ptAvg:keep(c.ptAvg), impliedPrice:keep(c.impliedPrice), impliedUpside:keep(c.impliedUpside),
+    impliedFrom:c.impliedFrom, refPrice:keep(c.price), name:c.name,
   };
 }
 
@@ -945,8 +1168,9 @@ const stMark = st => st === 'pass' ? '<span class="ok">✓</span>'
                    : st === 'fail' ? '<span class="no">✗</span>'
                    : '<span style="color:#6e7681">–</span>';
 
-async function renderFundamental(sym){
+async function renderFundamental(sym, ticket){
   const set = (sub, html, note) => { $('fu-sub').innerHTML = sub; $('fu').innerHTML = html; $('fu-note').textContent = note || ''; };
+  const mine = () => ticket === undefined || ticket === LOAD_ID;
 
   if (isCrypto(sym)){
     set('', `<div class="cell st none"><div class="c-lbl">פונדמנטלי</div>
@@ -955,57 +1179,77 @@ async function renderFundamental(sym){
   }
 
   set('טוען…', '', '');
-  let F = fundCache[sym];
+  const cached = fundCache[sym];
+  let F = (cached && Date.now() - cached.at < FUND_CACHE_MS) ? cached.F : null;
   if (!F){
     try {
       const U = await loadUniverse();
-      F = U[sym] ? fundFromUniverse(U[sym]) : await fetchFundLive(sym);
+      /* the snapshot is primary only while it is current; past the statement
+         horizon it is refused outright and the live path takes over */
+      if (U[sym] && universeUsable()) F = fundFromUniverse(U[sym]);   // recomputed, never cached
+      else { F = await fetchFundLive(sym); if (F) fundCache[sym] = { at:Date.now(), F }; }
     } catch (e){
-      try { F = await fetchFundLive(sym); } catch (e2){ F = null; }
+      try { F = await fetchFundLive(sym); if (F) fundCache[sym] = { at:Date.now(), F }; }
+      catch (e2){ F = null; }
     }
-    if (F) fundCache[sym] = F;
   }
+  /* the symbol changed while those requests were in flight — drop this answer
+     instead of painting company A's fundamentals under company B's chart */
+  if (!mine()) return;
 
   if (!F){
     set('', `<div class="cell st none"><div class="c-lbl">פונדמנטלי</div>
-      <div class="c-none">לא נמצאו נתונים פונדמנטליים ל-${sym}. הוא לא ברשימת ${UNIV_META ? UNIV_META.count : 126}
-      החברות של הפייפליין שלך, והמשיכה החיה לא החזירה נתונים.</div></div>`, '');
+      <div class="c-none">לא נמצאו נתונים פונדמנטליים ל-${esc(sym)}. הוא לא ברשימת החברות
+      של הפייפליין שלך${UNIV_META ? ` (${UNIV_META.count})` : ''}, והמשיכה החיה לא החזירה נתונים.</div></div>`, '');
     return;
   }
 
   const G = garp(F), V = verdictOf(G.ratio);
   const price = BARS.length ? BARS[BARS.length-1].c : null;
 
+  const asofTxt = !F.asof ? ''
+    : ` · <span class="mono">${dateLabel(F.asof)}</span>`
+      + (F.asofAge != null ? ` <span style="color:#6e7681">(לפני ${F.asofAge} ימים)</span>` : '');
   const card1 = `<div class="cell st ${V.key}">
       <div class="c-lbl">פסק פונדמנטלי</div>
-      <div class="c-px">${V.label} · ${G.pass} מתוך ${G.counted}</div>
-      <div class="c-meta">
-        <div>מקור: ${F.srcLabel}${F.asof ? ` · <span class="mono">${F.src === 'universe' ? F.asof : heDate(F.asof)}</span>` : ''}</div>
-        <div>סקטור: ${F.sector || 'לא ידוע'}${F.sectorNote ? ` <span style="color:#6e7681">(${F.sectorNote})</span>` : ''}</div>
+      <div class="hero"><b>${G.pass}</b> <span>מתוך ${G.counted} · ${V.label}</span></div>
+      <div>
+        <div class="ln"><span class="n">מקור</span>
+          <span class="v">${F.srcLabel}${asofTxt}</span></div>
+        <div class="ln"><span class="n">סקטור</span>
+          <span class="v">${SECTOR_LABEL[F.sector] || F.sector || 'לא ידוע'}${F.sectorNote ? ` <span style="color:#6e7681">${F.sectorNote}</span>` : ''}</span></div>
+        ${F.stalePrice ? `<div class="ln"><span class="n no">הסנאפשוט ישן מ-${FRESH_PRICE_DAYS} ימים</span>
+          <span class="v">מכפילים, יעד וערך משתמע נדחו</span></div>` : ''}
+        ${F.sector ? '' : `<div class="ln"><span class="n no">סקטור לא ידוע</span>
+          <span class="v">כללי ההתאמה לא הופעלו — הציון לא בר-השוואה</span></div>`}
       </div>
     </div>`;
 
   const card2 = `<div class="cell st flat">
       <div class="c-lbl">צ׳ק-ליסט GARP</div>
-      <div class="c-meta" style="margin-top:5px">${
-        G.rows.map(r => `<div>${stMark(r.st)} ${r.name}
-          <span style="color:#6e7681">${r.st === 'skip' ? '· לא ישים' : r.disp && r.disp !== '—' ? '· ' + r.disp : '· אין נתון'}</span></div>`).join('')
+      <div style="margin-top:7px">${
+        G.rows.map(r => `<div class="ln"><span class="n">${stMark(r.st)} <span>${r.name}</span></span>
+          <span class="v">${r.st === 'skip' ? 'לא ישים' : r.disp && r.disp !== '—' ? r.disp : 'אין נתון'}</span></div>`).join('')
       }</div>
     </div>`;
 
-  const upside = p => (p != null && price) ? ` <span style="color:#6e7681">(${p > price ? '+' : ''}${((p/price-1)*100).toFixed(0)}%)</span>` : '';
+  const upside = p => (p != null && price) ? ` <span style="color:#6e7681">${p > price ? '+' : ''}${((p/price-1)*100).toFixed(0)}%</span>` : '';
+  const line = (name, val) => `<div class="ln"><span class="n">${name}</span>
+        <span class="v">${val}</span></div>`;
   const card3 = `<div class="cell st flat">
       <div class="c-lbl">שווי ואיכות</div>
-      <div class="c-meta" style="margin-top:5px">
-        <div>ערך משתמע: ${F.impliedPrice != null
+      <div style="margin-top:7px">
+        ${line('ערך משתמע', F.impliedPrice != null
             ? `<b class="mono">${fmt(F.impliedPrice)}</b>${upside(F.impliedPrice)}`
-            : '<span style="color:#6e7681">n/a — מחושב ממדיאן הסקטור, דורש את כל היוניברס</span>'}</div>
-        <div>יעד אנליסטים: ${numOr(F.ptAvg, v => `<b class="mono">${fmt(v)}</b>`)}${upside(F.ptAvg)}</div>
-        <div>מחיר בגרף: <b class="mono">${price != null ? fmt(price) : '—'}</b></div>
-        <div style="margin-top:4px">ROE ${numOr(F.roe, v => v.toFixed(1), '%')}
-          · מרווח נקי ${numOr(F.netMargin, v => v.toFixed(1), '%')}
-          · צמיחה ${numOr(F.revGrowth, v => v.toFixed(1), '%')}
-          · PEG ${numOr(F.peg, v => v.toFixed(2))}${F.pegComputed && F.peg != null ? ' <span style="color:#6e7681">(מחושב)</span>' : ''}</div>
+            : '<span style="color:#6e7681">n/a — דורש את כל היוניברס</span>')}
+        ${line('יעד אנליסטים', numOr(F.ptAvg, v => `<b class="mono">${fmt(v)}</b>`) + upside(F.ptAvg))}
+        ${line('מחיר בגרף', `<b class="mono">${price != null ? fmt(price) : '—'}</b>`)}
+        ${line('ROE', numOr(F.roe, v => v.toFixed(1), '%'))}
+        ${line('מרווח נקי', numOr(F.netMargin, v => v.toFixed(1), '%'))}
+        ${line('צמיחת הכנסות', numOr(F.revGrowth, v => v.toFixed(1), '%'))}
+        ${line('PEG', F.peg == null ? '<span style="color:#6e7681">—</span>'
+                 : F.peg <= 0 ? '<span class="no">שלילי</span>'
+                 : F.peg.toFixed(2) + (F.pegComputed ? ' <span style="color:#6e7681">(מחושב)</span>' : ''))}
       </div>
     </div>`;
 
@@ -1037,24 +1281,48 @@ async function renderFundamental(sym){
   $('fu-note').textContent =
     (F.src === 'universe'
       ? 'הנתונים מהפייפליין שלך (yfinance), אותם 8 קריטריונים ואותם כללי התאמה לסקטור כמו בטרמינל הקיים. '
-      : 'הטיקר אינו ביוניברס שלך, ולכן הנתונים נמשכו חי מ-stockanalysis — API פנימי לא מתועד, עלול להשתנות. ')
-    + 'ערך שמקורו מיושן נחשב חסר ולא מוצג: מכפילים ויעד אנליסטים נדחים מעל '
-    + FRESH_PRICE_DAYS + ' ימים, נתוני דוחות מעל ' + FRESH_STMT_DAYS + ' ימים. '
+        + 'כלל הטריות חל גם כאן, על תאריך הבנייה של הסנאפשוט: מעל ' + FRESH_PRICE_DAYS
+        + ' ימים המכפילים והיעד נדחים, ומעל ' + FRESH_STMT_DAYS + ' ימים הסנאפשוט כולו נפסל לטובת משיכה חיה. '
+      : 'הטיקר אינו ביוניברס שלך (או שהסנאפשוט ישן מדי), ולכן הנתונים נמשכו חי מ-stockanalysis — API פנימי לא מתועד, עלול להשתנות. '
+        + 'ערך שמקורו מיושן נחשב חסר ולא מוצג: מכפילים ויעד אנליסטים נדחים מעל '
+        + FRESH_PRICE_DAYS + ' ימים, נתוני דוחות מעל ' + FRESH_STMT_DAYS + ' ימים. ')
     + (F.pegComputed
         ? 'PEG כאן מחושב כמכפיל רווח חלקי צמיחת הרווח בפועל — הגדרה שונה מזו של הפייפליין, שמשתמש בצמיחה חזויה ל-5 שנים. לא להשוות בין השניים. '
         : '')
-    + 'קריטריון שאינו ישים לסקטור או שחסר לו נתון אינו נספר במכנה, ולכן ציונים של חברות שונות נמדדו מול מבחנים שונים.';
+    + 'קריטריון שאינו ישים לסקטור או שחסר לו נתון אינו נספר במכנה, ולכן ציונים של חברות שונות נמדדו מול מבחנים שונים. '
+    + 'לעומת זאת ערך שקיים אך שלילי מעבר למה שהסף יודע לבטא — PEG שלילי, הון עצמי שלילי, מכפיל שלילי — נספר ככישלון מפורש ולא כחוסר נתון.';
 }
 
 /* ──────────────────────────── load ──────────────────────────── */
 
+/* Everything a symbol owns, in one place. The veil sits inside #wrap, so it only
+   ever covered the chart: a failed load used to leave the previous symbol's levels,
+   score and fundamentals sitting in the footer under the words "could not load X".
+   Nothing on screen may outlive the symbol it describes. */
+function resetView(){
+  BARS = []; IND = null; TECH = null;
+  clearLines();
+  markers.setMarkers([]); brkMarkers.setMarkers([]);
+  candles.setData([]); volSeries.setData([]); rsiSeries.setData([]); rsiMaSeries.setData([]);
+  for (const m of MAS) maSeries[m.key].setData([]);
+  $('qsym').textContent = '—'; $('qpx').textContent = '—';
+  $('qch').textContent = ''; $('qch').className = 'q-ch';
+  $('st').innerHTML = '';  $('st-sub').textContent = '—';
+  $('lv').innerHTML = '';  $('lv-win').textContent = '—'; $('lv-note').textContent = '';
+  $('fu').innerHTML = '';  $('fu-sub').textContent = '—'; $('fu-note').textContent = '';
+}
+
 async function load(sym){
   sym = (sym || '').trim().toUpperCase();
   if (!sym) return;
+  const ticket = ++LOAD_ID;         // anything async below must still hold this
+  resetView();
   veil(true, 'טוען ' + sym + '…', '');
   try {
-    BARS = isCrypto(sym) ? await fetchCrypto(sym) : await fetchStock(sym);
-    if (BARS.length < 120) throw new Error(`only ${BARS.length} bars — not enough history`);
+    const bars = isCrypto(sym) ? await fetchCrypto(sym) : await fetchStock(sym);
+    if (ticket !== LOAD_ID) return;                       // superseded mid-flight
+    if (bars.length < 120) throw new Error(`only ${bars.length} bars — not enough history`);
+    BARS = bars;
     veil(false);
     paintSeries();
     paintQuote(sym);
@@ -1063,8 +1331,10 @@ async function load(sym){
     sizePanes();
     renderAssessment();   // fixed windows: once per symbol, not per zoom
     renderLevels();       // view-dependent: re-runs on every range change
-    renderFundamental(sym);   // async, paints when its sources answer
+    renderFundamental(sym, ticket);   // async, paints when its sources answer
   } catch (e){
+    if (ticket !== LOAD_ID) return;
+    resetView();
     veil(true, 'לא הצלחתי לטעון ' + sym,
       isCrypto(sym)
         ? 'המקור לקריפטו הוא Binance. בדוק שהצמד קיים — למשל BTCUSDT, ETHUSDT, SOLUSDT. (' + e.message + ')'
