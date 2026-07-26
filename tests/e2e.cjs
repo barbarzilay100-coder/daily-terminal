@@ -165,28 +165,34 @@ server.listen(PORT, () => {
   ck('canvases rendered', s.canv>=3, s.canv);
   ck('quote shows symbol + price', s.qsym==='ORCL' && s.qpx==='114.99', [s.qsym,s.qpx]);
   ck('quote change is negative-styled', /neg/.test(s.qcls), s.qcls);
-  ck('exactly 3 level items', s.cells.length===3, s.cells.length);
+  ck('exactly 2 level items', s.cells.length===2, s.cells.length);
   ck('window line reports bars + nodes', /bars/.test(s.win) && /clusters/.test(s.win), s.win);
 
-  const sup = s.cells[2];
-  ck('support item is a real level on the 5Y window (ORCL traded down there in 2022)',
-     sup.k==='Support' && /104\.71/.test(sup.p), sup);
+  /* The 2022 band at 104.71 used to be the support on this window. Time decay ends it:
+     it sits about seven half-lives back, so it carries under 1% of a recent bar's weight
+     and no longer clears the mean bin. The point of the assertion is unchanged — the
+     panel must SAY the support is missing rather than leave a strip that looks complete. */
+  ck('the decayed-away support is stated, not silently dropped',
+     /No volume cluster below the price/.test(s.say), s.say);
   ck('two resistance items are real levels, labelled and priced',
      /^Resistance 1$/.test(s.cells[0].k) && /^Resistance 2$/.test(s.cells[1].k)
        && /\d/.test(s.cells[0].p) && /\d/.test(s.cells[1].p), [s.cells[0],s.cells[1]]);
-  ck('nothing is missing, so the panel says nothing', s.say==='', s.say);
-  ck('price lines drawn = number of real levels (3)', s.lines===3, s.lines);
+  ck('price lines drawn = number of real levels (2)', s.lines===2, s.lines);
 
-  // algorithm parity with the Python golden run on the same 5Y window
+  /* Was parity with a Python golden run. Volatility-scaled separation and time decay
+     changed the algorithm deliberately, and there is no Python side to re-run, so these
+     are the JS output frozen at that change. They still do the original job: if an edit
+     that claims to touch only the drawing moves these three, the maths moved with it. */
   const g = await pg.evaluate(()=>{
     const bars = window.__BARS, price = bars[bars.length-1].c;
     const r = window.__profileLevels(bars, price);
     return { price, nodes:r.nodes.map(n=>+n.p.toFixed(2)), res:r.res.map(n=>+n.p.toFixed(2)), sup:r.sup?+r.sup.p.toFixed(2):null };
   });
   console.log('\nJS profile on full 5Y:', JSON.stringify(g));
-  ck('JS matches Python golden R1=116.58', Math.abs(g.res[0]-116.58)<0.02, g.res[0]);
-  ck('JS matches Python golden R2=126.08', Math.abs(g.res[1]-126.08)<0.02, g.res[1]);
-  ck('JS matches Python golden S1=104.71 on full window', Math.abs(g.sup-104.71)<0.02, g.sup);
+  ck('golden R1=123.70 on the full window', Math.abs(g.res[0]-123.70)<0.02, g.res[0]);
+  ck('golden R2=130.83 on the full window', Math.abs(g.res[1]-130.83)<0.02, g.res[1]);
+  ck('golden: nothing below the price survives the decay, so there is no support',
+     g.sup===null, g.sup);
 
   /* The up/down split feeds only the drawing. If it ever leaked into hist the three
      golden assertions above would move, so those are the real guard — these check
@@ -315,6 +321,46 @@ server.listen(PORT, () => {
   ck('RSI condition is a band, and ORCL (RSI far below 50) fails it',
      S2.rsi<S2.lo && S2.rsiOb===false, [S2.rsi, S2.lo, S2.rsiOb]);
 
+  /* freshness is recency AND price: a cross four days back that price has already run
+     away from is a chase, and the entry it offered is gone */
+  const CH = await pg.evaluate(()=>{
+    const B=window.__BARS, F=window.__FRESH_DAYS, CAP=window.__MAX_CHASE_PCT;
+    const fresh=window.__freshUpFlags();
+    const up=new Array(B.length).fill(false);
+    for (const x of window.__crossovers(window.__IND.ema9, window.__IND.ema21)) if (x.dir>0) up[x.i]=true;
+    let chased=null, near=null;
+    for (let i=B.length-1; i>0 && (chased===null || near===null); i--){
+      const js=[];
+      for (let j=Math.max(0,i-F+1); j<=i; j++) if (up[j]) js.push(j);
+      if (!js.length) continue;
+      const runs=js.map(j=>+((B[i].c-B[j].c)/B[j].c*100).toFixed(2));
+      if (chased===null && runs.every(r=>r>CAP)) chased={i, runs, fresh:fresh[i]};
+      if (near===null   && runs.some(r=>r<=CAP)) near  ={i, runs, fresh:fresh[i]};
+    }
+    return {chased, near, cap:CAP};
+  });
+  console.log('anti-chase:', JSON.stringify(CH));
+  ck('a cross within the window still fails freshness once price has run past the cap',
+     CH.chased!==null && CH.chased.fresh===false, CH.chased);
+  ck('a cross the price has NOT run away from still counts as fresh',
+     CH.near!==null && CH.near.fresh===true, CH.near);
+
+  // a heavy DOWN bar is the market leaving: it must not collect the volume point
+  const VD = await pg.evaluate(()=>{
+    const B=window.__BARS, A=window.__IND.volAvg, fresh=window.__freshUpFlags(), lv={res:[],sup:null};
+    let dn=null, up=null;
+    for (let i=B.length-1; i>0 && (dn===null || up===null); i--){
+      if (A[i]==null || !(B[i].v > A[i])) continue;
+      if (B[i].c < B[i-1].c){ if (dn===null) dn=i; } else if (up===null) up=i;
+    }
+    return { dn, up,
+             dnVol: dn===null ? 'no such bar' : window.__evalConditions(dn,fresh,lv).vol,
+             upVol: up===null ? 'no such bar' : window.__evalConditions(up,fresh,lv).vol };
+  });
+  console.log('volume direction:', JSON.stringify(VD));
+  ck('above-average volume scores on an up bar and fails on a down bar',
+     VD.dnVol===false && VD.upVol===true, VD);
+
   // "no resistance overhead" is the maximum of the measured quantity, not a missing value
   const RM = await pg.evaluate(()=>{
     const n=window.__BARS.length-1, fresh=window.__freshUpFlags(), c=window.__BARS[n].c;
@@ -326,8 +372,10 @@ server.listen(PORT, () => {
   console.log('room/RR:', JSON.stringify(RM));
   ck('NO RESISTANCE = unlimited room, so the room condition PASSES instead of reading n/a',
      RM.noneRoom===true && RM.noneFlag===true && RM.noneRoomVal===Infinity, RM);
-  ck('with unlimited room and a real support, R:R passes rather than dropping out',
-     RM.noneRR===true, RM);
+  /* room and R:R are both derived from the distance overhead, so "nothing overhead"
+     used to pass both and pay for one fact twice. Room keeps the point; R:R drops out. */
+  ck('unlimited room is scored once: R:R reads n/a rather than taking a second point',
+     RM.noneRR===null, RM);
   ck('a near resistance still fails the 3% room rule (the rule did not become vacuous)',
      RM.nearRoom===false, RM);
 
@@ -551,6 +599,12 @@ server.listen(PORT, () => {
      ups.filter(m=>!m.gate));
   ck('markers are sorted ascending by time (library requirement)',
      mk.every((m,i)=>i===0 || mk[i-1].t<=m.t), 'unsorted');
+  /* An exit is an exit FROM something. Down-crosses closing a position the gate never
+     let us open were being drawn as sell signals for trades this system was never in,
+     so the arrows have to alternate, starting with an entry. */
+  ck('every exit marker closes an entry: the arrows alternate, up first',
+     mk.length>0 && mk[0].shape==='arrowUp'
+       && mk.every((m,i)=>i===0 || m.shape!==mk[i-1].shape), mk.map(m=>m.shape).join(','));
   ck('no level-break marker on the ribbon series', mk.every(m=>m.shape!=='circle'), mk.filter(m=>m.shape==='circle'));
   ck('at most one level-break marker, on the candle series',
      (await pg.evaluate(()=>window.__brkMarkers.markers().length))<=1, null);

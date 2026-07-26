@@ -87,7 +87,7 @@ const STUB = `<script>
       __fundFromUniverse:fundFromUniverse, __universeAge:universeAge, __universeUsable:universeUsable,
       __ageDays:ageDays, __dateLabel:dateLabel,
       __COND:COND, __LEVEL_COLOR:LEVEL_COLOR, __MAS:MAS, __resetView:resetView,
-      __PROFILE_LOOKBACK:PROFILE_LOOKBACK, __FRESH_DAYS:FRESH_DAYS,
+      __PROFILE_LOOKBACK:PROFILE_LOOKBACK, __FRESH_DAYS:FRESH_DAYS, __MAX_CHASE_PCT:MAX_CHASE_PCT,
       __FRESH_PRICE_DAYS:FRESH_PRICE_DAYS, __FRESH_STMT_DAYS:FRESH_STMT_DAYS,
       __RSI_LO:RSI_LO, __RSI_HI:RSI_HI,
       __setBARS:v => { BARS = v; }, __paintSeries:paintSeries,

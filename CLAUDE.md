@@ -66,7 +66,8 @@ missed, because this note said "twice" and only named the two in the README.
 ## Architecture Decisions
 
 - **One file, no build.** The deliverable is a link a recruiter clicks. A build step is a way for that link to break.
-- **Levels come from a 120-bin volume-by-price histogram**, never from drawn lines. A local peak clearing the mean bin becomes a level; peaks within 1.5% of one already taken are dropped.
+- **Levels come from a 120-bin volume-by-price histogram**, never from drawn lines. A local peak clearing the mean bin becomes a level; peaks too close to one already taken are dropped, where "too close" is the asset's own median daily range × 1.5, clamped to 1–5%.
+- **Volume enters the profile weighted by age**, half-life 126 bars. Recent accumulation outweighs year-old volume at the same price. A consequence worth knowing: on a multi-year window the oldest bars are effectively absent, so zooming out past roughly 18 months changes the levels very little.
 - **No volume means no levels.** An empty window returns nothing and says why, rather than inventing a level out of a zero-mean histogram.
 - **Levels follow the visible range and are measured against the last bar in view**; the score does not — it always uses a fixed lookback, so it stays comparable.
 - **The profile histogram is drawn, docked to the price scale**, split into volume that arrived on up days (green) against down days (red). `hist` feeds the level maths, `histUp` feeds only the drawing — the two must never be merged.
@@ -83,5 +84,5 @@ missed, because this note said "twice" and only named the two in the README.
 
 ## Do Not Touch
 
-- `tests/fixtures/data/` — recorded real API responses. Re-recording invalidates the golden run (`R1=116.58`, `R2=126.08`, `S1=104.71`) and the frozen clock in `harness.js`. If they are ever re-recorded, `RECORDED_AT` moves with them.
+- `tests/fixtures/data/` — recorded real API responses. Re-recording invalidates the golden run (`R1=123.70`, `R2=130.83`, no support) and the frozen clock in `harness.js`. If they are ever re-recorded, `RECORDED_AT` moves with them. These values were re-based when the profile gained volatility-scaled separation and time decay; they are no longer parity with the original Python run, which no longer exists to compare against.
 - The three golden-run assertions in `tests/e2e.cjs`. They are the guard that a change to the drawing never moved the maths.

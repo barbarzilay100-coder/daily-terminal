@@ -7,6 +7,20 @@
 
 ## Lessons
 
+### A weighting change can delete a level outright, and a "do not touch" baseline can be legitimately invalidated by it
+2026-07-27. Adding time decay to the volume profile (half-life 126 bars) removed ORCL's 2022
+support at 104.71 from every window: at roughly seven half-lives it carries under 1% of a
+recent bar's weight and stops clearing the mean bin. The three golden-run assertions, marked
+Do Not Touch in CLAUDE.md, were asserting the *old* algorithm and had to be re-based. Two
+things worth carrying forward. First, when a half-life is much shorter than the window, the
+long window quietly stops meaning what its label says — a 5Y profile became a recent-history
+profile with a tail, so zooming out past ~18 months barely moves the levels. Check that
+consequence before assuming a decay parameter is only a weighting detail. Second, a protected
+baseline that a *requested* algorithm change invalidates should be re-based loudly — new
+numbers, a comment saying what changed, and a line in the report — never quietly edited to
+match. The golden run also lost its independent Python reference in the process, which
+downgrades it from a parity check to a self-baseline; that is a real loss and worth stating.
+
 ### The e2e suite treats the palette and the levels-panel DOM as contract — a restyle is always a two-file change
 2026-07-26. The redesign changed colours and replaced the three level cards with one line,
 and roughly ten assertions failed on hard-coded hexes and `#lv .cell` selectors before a
