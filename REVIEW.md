@@ -11,7 +11,11 @@ a portfolio piece that convinces a recruiter for junior finance roles in Israel.
 
 ## Queue (ordered by priority)
 
-- [ ] P3 — The chart wastes the left half of its width on a 5Y fit — Confirmed pre-existing, not a redesign regression: loading the pre-redesign `main` side by side showed the identical gap. Still the first thing a visitor sees — Done when: a full fit either fills the width or the default view is narrowed to one that does, with the suite still green
+- [ ] P4 — The chart can leave blank space on its left after the window is resized — **Investigated 26 Jul 2026; mechanism known, cheap fix ruled out.** Not a redesign regression (identical on the pre-redesign `main`) and it does **not** happen on a clean load: `load()` sets the last `INITIAL_BARS` (140) and that holds — verified at several viewport sizes, and under a chart that has no layout at the moment the range is set. It appears only when the viewport widens *after* load: Lightweight Charts preserves bar spacing rather than bar count, so the view creeps left until it runs past the oldest bar. Self-correcting the moment the user scrolls or zooms.
+
+  **Do not "fix" this with `timeScale.fixLeftEdge`.** It was tried and reverted: it costs the newest bar (`fitContent` then reports 1254 bars ending 23 Jul instead of 1255 ending 24 Jul), which changes the close the levels are measured against — an analytical change in exchange for a cosmetic one. Two assertions caught it.
+
+  — Done when: the view stops running past the first bar on resize **without** altering which bar is last in view, suite green. Worth doing only if it is ever seen on a first impression rather than after a deliberate resize.
 
 - [ ] P3 — `docs/METHODOLOGY.md` unverified against the current code — It was not re-read during the redesign. The level maths did not change, so it is probably accurate, but "probably" is not the standard the rest of this project holds — Done when: every numeric claim in it is checked against `profileLevels()` and the constants, and any drift is corrected
 

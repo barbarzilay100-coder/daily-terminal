@@ -30,6 +30,22 @@ relative to the debounced redraw. The trustworthy checks were the screenshot and
 suite's `__vpInk()` probe, which runs after `__stable()`. Do not conclude "it is broken"
 from an interactive probe that has no synchronisation.
 
+### Reproduce a visual complaint before fixing it — this one was not what it looked like
+2026-07-26. "The chart wastes the left half of its width" was filed from a screenshot and
+looked like a layout bug in the fit. It is not: a clean load sets the last 140 bars and
+holds them at every viewport size tested, including with the chart unlaid-out at the moment
+the range is set. The blank appears only when the window widens *after* load, because
+Lightweight Charts preserves bar spacing rather than bar count. Two hypotheses were
+disproved by experiment before the real mechanism showed up — the second, a zero-height
+container, took a throwaway Playwright script to rule out and was worth the five minutes.
+
+### `timeScale.fixLeftEdge` costs the newest bar — never use it here
+2026-07-26. It is the obvious one-line answer to blank space on the left, and it silently
+drops the last bar from the fitted range: `fitContent` reported 1254 bars ending 23 Jul
+instead of 1255 ending 24 Jul. Since the levels are measured against the close of the last
+bar *in view*, that turns a cosmetic fix into an analytical change. The suite caught it in
+two places. Reverted.
+
 ### Regenerating the screenshots is a verification step, not just a deliverable
 2026-07-26. The refreshed README images exposed the Verdict card's source line clipped
 mid-word at "(1 d" — the value was `flex:none` and overflowed the narrowed rail. Neither

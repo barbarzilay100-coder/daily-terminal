@@ -6,7 +6,7 @@
 ## Current Status
 
 **Active phase:** Phase 3 — visual identity and presentation
-**Active task:** none open — top of the REVIEW.md queue is now P3, the chart's empty left half
+**Active task:** none open — top of the REVIEW.md queue is now P3, verifying METHODOLOGY.md against the code
 **Last updated:** 2026-07-26
 
 The app is feature-complete and live on GitHub Pages. The English migration and the
@@ -35,8 +35,6 @@ None set.
 
 ## Backlog
 
-- The chart leaves the left ~45% empty on a 5Y fit. Pre-existing, confirmed identical on the pre-redesign `main` — not a redesign regression. Worth a look, not urgent.
-- One e2e test name still says the sector is stated "in Hebrew", left over from the English migration. Cosmetic, one word.
 - `docs/METHODOLOGY.md` was not re-read during the redesign. Its prose about levels is believed accurate but was not verified line by line.
 - The fundamentals row leaves whitespace under the narrow Verdict rail. Honest whitespace now rather than a stretched empty card, but a third item could fill it.
 
@@ -46,6 +44,7 @@ None.
 
 ## Session Log
 
+2026-07-26 | Investigate the chart's blank left edge (REVIEW P3) | Partial | Verified by: clean loads at several viewports all hold 140 bars, a Playwright repro ruled out the zero-layout theory, and fixLeftEdge was tried and reverted after 2 assertions caught it dropping the newest bar | Next: item re-scoped and downgraded to P4 with the dead end recorded; no code change shipped
 2026-07-26 | Rename the stale "in Hebrew" test (REVIEW P2) | Done | Verified by: 157/157 green, repo-wide sweep for Hebrew characters returns nothing | Next: REVIEW P3, the chart's empty left half on a 5Y fit
 2026-07-26 | README: say the profile is drawn (REVIEW P1) | Done | Verified by: each claim checked against profileLevels/drawProfile in index.html; docs-only change, no code touched | Next: REVIEW P2, rename the test that still says "in Hebrew"
 2026-07-26 | Market-profile redesign + English migration follow-up | Done | Verified by: 157/157 e2e locally and in CI, GitHub Pages deploy green, screenshots regenerated and visually checked | Next: mention the drawn profile in the README
