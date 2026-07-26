@@ -1,12 +1,12 @@
-# Technical Terminal
+# Daily Terminal
 
-[![tests](https://github.com/barbarzilay100-coder/technical-terminal/actions/workflows/test.yml/badge.svg)](https://github.com/barbarzilay100-coder/technical-terminal/actions/workflows/test.yml)
+[![tests](https://github.com/barbarzilay100-coder/daily-terminal/actions/workflows/test.yml/badge.svg)](https://github.com/barbarzilay100-coder/daily-terminal/actions/workflows/test.yml)
 
 Daily technical research on any US stock or crypto pair, with the company's fundamental
 scorecard read beside it. Support and resistance are computed from where volume actually
 traded, not drawn by eye.
 
-### ▶ [Open the live terminal](https://barbarzilay100-coder.github.io/technical-terminal/)
+### ▶ [Open the live terminal](https://barbarzilay100-coder.github.io/daily-terminal/)
 
 No sign-up and no API key — it is one HTML file and it fetches its own data.
 

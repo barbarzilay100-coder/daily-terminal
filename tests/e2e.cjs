@@ -1,4 +1,4 @@
-/* End-to-end test for the Technical Terminal.
+/* End-to-end test for the Daily Terminal.
  *
  * Boots the real index.html in headless Chromium against recorded API fixtures
  * (no network, frozen clock), then asserts on behaviour rather than on markup:
