@@ -57,10 +57,11 @@ npm test                                          # node tests/e2e.cjs
 
 There is no lint step and no build step. `npm test` is the whole gate.
 
-**The assertion count is quoted in the README twice** — in the "Skills demonstrated" table and
-in the Tests section. Adding or removing assertions means editing both, in the same commit. It
-went stale once already: the suite reached 157 while the README still claimed 148, in a project
-whose whole argument is verification discipline.
+**The assertion count is quoted in three places** — the README's "Skills demonstrated" table,
+the README's Tests section, and the header comment of `.github/workflows/test.yml`. Adding or
+removing assertions means editing all three, in the same commit. It has gone stale twice: the
+README claimed 148 while the suite was at 157, and when that was fixed the workflow comment was
+missed, because this note said "twice" and only named the two in the README.
 
 ## Architecture Decisions
 

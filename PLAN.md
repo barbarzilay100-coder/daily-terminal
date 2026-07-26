@@ -43,6 +43,7 @@ None.
 
 ## Session Log
 
+2026-07-26 | Fix the stale assertion count in the CI workflow comment | Done | Verified by: `npm test` printed "157 passed, 0 failed" before the edit, and the comment now matches; CLAUDE.md's sync note corrected from two quote sites to three, since naming only the README is what let this one rot | Next: only the two cosmetic P4s remain
 2026-07-26 | Verify METHODOLOGY.md against the code (REVIEW P3) | Done | Verified by: every threshold read from source and matched one by one; one error fixed (default view is 140 bars, not the 252 the score uses, so the two bases do not coincide); suite 157/157 | Next: only two cosmetic P4s remain
 2026-07-26 | Investigate the chart's blank left edge (REVIEW P3) | Partial | Verified by: clean loads at several viewports all hold 140 bars, a Playwright repro ruled out the zero-layout theory, and fixLeftEdge was tried and reverted after 2 assertions caught it dropping the newest bar | Next: item re-scoped and downgraded to P4 with the dead end recorded; no code change shipped
 2026-07-26 | Rename the stale "in Hebrew" test (REVIEW P2) | Done | Verified by: 157/157 green, repo-wide sweep for Hebrew characters returns nothing | Next: REVIEW P3, the chart's empty left half on a 5Y fit
