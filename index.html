@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Technical Terminal — Daily</title>
+<script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#151b23; --line:#262d38; --line2:#30363d;
+    --ink:#e6edf3; --dim:#8b949e; --acc:#58a6ff;
+    --ma9:#00c853; --ma21:#f6c309; --ma50:#fb9800; --ma100:#f60c0c;
+    --up:#26a69a; --down:#ef5350;
+    --level:#2962ff;   /* support & resistance share one colour */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0; height:100%}
+  body{
+    background:var(--bg); color:var(--ink); font-size:14px;
+    font-family:-apple-system,'Segoe UI',Arial,sans-serif;
+    display:flex; flex-direction:column;
+  }
+
+  header{
+    border-bottom:1px solid var(--line); padding:12px 18px;
+    display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+  }
+  .brand{font-size:15px; font-weight:600; letter-spacing:.2px}
+  .brand span{color:var(--dim); font-weight:400; font-size:12.5px; margin-inline-start:8px}
+
+  input[type=text]{
+    background:#0d1117; border:1px solid var(--line2); color:var(--ink);
+    padding:8px 12px; border-radius:6px; font-size:13.5px; width:170px;
+    direction:ltr; text-align:left; font-family:ui-monospace,monospace;
+    text-transform:uppercase;
+  }
+  input[type=text]:focus{outline:none; border-color:var(--acc)}
+  button{
+    background:#21262d; border:1px solid var(--line2); color:var(--ink);
+    padding:8px 12px; border-radius:6px; font-size:12.5px; cursor:pointer;
+  }
+  button:hover{background:#2d333b}
+  button.go{background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:600}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chips button{padding:7px 10px; font-size:12px; font-family:ui-monospace,monospace; direction:ltr}
+  .sep{width:1px; height:24px; background:var(--line)}
+
+  .quote{display:flex; align-items:baseline; gap:10px; margin-inline-start:auto; direction:ltr}
+  .q-sym{font-size:13px; color:var(--dim); font-family:ui-monospace,monospace}
+  .q-px{font-size:22px; font-weight:600; font-variant-numeric:tabular-nums}
+  .q-ch{font-size:13.5px; font-variant-numeric:tabular-nums}
+  .pos{color:var(--up)} .neg{color:var(--down)}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:16px; padding:9px 18px;
+    border-bottom:1px solid var(--line); font-size:12px; color:var(--dim);
+    direction:ltr;
+  }
+  .legend i{display:inline-block; width:16px; height:2.5px; vertical-align:middle; margin-inline-end:6px; border-radius:2px}
+
+  /* fixed chart height + a scrolling page, so adding footer sections
+     never squeezes the chart into uselessness */
+  #wrap{flex:none; height:58vh; min-height:400px; position:relative}
+  #chart{position:absolute; inset:0}
+  #veil{
+    position:absolute; inset:0; display:none; place-items:center; text-align:center;
+    background:#0d1117e6; z-index:5; padding:24px; font-size:13.5px; line-height:1.8;
+  }
+  #veil.on{display:grid}
+  #veil .big{font-size:15px; color:var(--ink); margin-bottom:6px}
+  #veil .why{color:var(--dim); max-width:520px}
+
+  footer{border-top:1px solid var(--line); padding:14px 18px 18px}
+  .lv-head{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    font-size:12.5px; color:var(--dim); margin-bottom:11px;
+  }
+  .lv-head b{color:var(--ink); font-weight:600; font-size:13px}
+  .lv{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .cell{
+    background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:11px 13px; border-inline-start-width:3px; border-inline-start-style:solid;
+  }
+  .cell.r,
+  .cell.s{border-inline-start-color:var(--level)}
+  .cell.none{border-inline-start-color:var(--line2)}
+  .cell.bull{border-inline-start-color:var(--up)}
+  .cell.bear{border-inline-start-color:var(--down)}
+  .cell.flat{border-inline-start-color:#8b949e}
+
+  /* status strip — denser than the level cards so the chart keeps its height */
+  .cell.st{padding:9px 12px}
+  .cell.st .c-px{font-size:15px; font-weight:600; text-align:start; direction:rtl; margin-top:2px}
+  .cell.st .c-meta{text-align:start; direction:rtl; font-size:11.5px; line-height:1.6}
+  .cell.st .mono{direction:ltr; unicode-bidi:isolate; font-family:ui-monospace,monospace; font-size:11.5px}
+  .ok{color:var(--up)} .no{color:var(--down)}
+  .c-lbl{font-size:11.5px; color:var(--dim); letter-spacing:.3px; text-transform:uppercase}
+  .c-px{font-size:21px; font-weight:600; margin-top:3px; direction:ltr; text-align:right; font-variant-numeric:tabular-nums}
+  .c-meta{font-size:12px; color:var(--dim); margin-top:3px; direction:ltr; text-align:right}
+  .c-none{font-size:13px; color:var(--dim); margin-top:6px; line-height:1.6}
+  .note{font-size:11.5px; color:#6e7681; margin-top:11px; line-height:1.7}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Technical Terminal <span>Daily · volume-profile levels</span></div>
+  <div class="sep"></div>
+  <input id="sym" type="text" value="ORCL" spellcheck="false" autocomplete="off">
+  <button class="go" id="go">Load</button>
+  <div class="chips">
+    <button data-s="ORCL">ORCL</button>
+    <button data-s="AAPL">AAPL</button>
+    <button data-s="NVDA">NVDA</button>
+    <button data-s="MSFT">MSFT</button>
+    <button data-s="TEVA">TEVA</button>
+    <button data-s="BTCUSDT">BTC</button>
+    <button data-s="ETHUSDT">ETH</button>
+  </div>
+  <div class="quote">
+    <span class="q-sym" id="qsym">—</span>
+    <span class="q-px"  id="qpx">—</span>
+    <span class="q-ch"  id="qch"></span>
+  </div>
+</header>
+
+<div class="legend">
+  <span><i style="background:var(--ma9)"></i>EMA 9</span>
+  <span><i style="background:var(--ma21)"></i>EMA 21</span>
+  <span><i style="background:var(--ma50)"></i>SMA 50</span>
+  <span><i style="background:var(--ma100)"></i>SMA 100</span>
+  <span style="color:#6e7681">Volume</span>
+  <span style="margin-inline-start:6px">
+    <b style="color:#fff">▲</b><b style="color:#fff">▼</b>
+    <span style="color:#8b949e">&nbsp;טריגר חציית 9/21 — מעלה כניסה, מטה יציאה</span>
+  </span>
+</div>
+
+<div id="wrap">
+  <div id="chart"></div>
+  <div id="veil"><div><div class="big" id="veil-t">טוען…</div><div class="why" id="veil-w"></div></div></div>
+</div>
+
+<footer>
+  <div class="lv-head"><b>מצב הנקודה הנוכחית</b><span id="st-sub">—</span></div>
+  <div class="lv" id="st"></div>
+
+  <div class="lv-head" style="margin-top:15px">
+    <b>רמות מפרופיל נפח</b>
+    <span id="lv-win">—</span>
+  </div>
+  <div class="lv" id="lv"></div>
+  <div class="note" id="lv-note"></div>
+
+  <div class="lv-head" style="margin-top:15px">
+    <b>פונדמנטלי</b>
+    <span id="fu-sub">—</span>
+  </div>
+  <div class="lv" id="fu"></div>
+  <div class="note" id="fu-note"></div>
+</footer>
+
+<script>
+'use strict';
+const LC = LightweightCharts;
+
+/* ─────────────────────────── indicators ─────────────────────────── */
+
+function sma(vals, n){
+  const out = new Array(vals.length).fill(null);
+  let sum = 0;
+  for (let i = 0; i < vals.length; i++){
+    const v = vals[i];
+    if (v == null){ sum = 0; continue; }
+    sum += v;
+    if (i >= n) sum -= vals[i-n];
+    if (i >= n-1) out[i] = sum / n;
+  }
+  return out;
+}
+
+function ema(vals, n){
+  const out = new Array(vals.length).fill(null);
+  const k = 2 / (n + 1);
+  let prev = null;
+  for (let i = 0; i < vals.length; i++){
+    const v = vals[i];
+    if (prev === null){
+      // seed with an SMA of the first n values, like TradingView does
+      if (i >= n-1){
+        let s = 0; for (let j = i-n+1; j <= i; j++) s += vals[j];
+        prev = s / n; out[i] = prev;
+      }
+    } else {
+      prev = v * k + prev * (1 - k);
+      out[i] = prev;
+    }
+  }
+  return out;
+}
+
+/* Wilder RSI — the same smoothing TradingView uses */
+function rsi(closes, n){
+  const out = new Array(closes.length).fill(null);
+  let ag = 0, al = 0;
+  for (let i = 1; i < closes.length; i++){
+    const d = closes[i] - closes[i-1];
+    const g = d > 0 ? d : 0, l = d < 0 ? -d : 0;
+    if (i <= n){
+      ag += g; al += l;
+      if (i === n){
+        ag /= n; al /= n;
+        out[i] = al === 0 ? 100 : 100 - 100 / (1 + ag/al);
+      }
+    } else {
+      ag = (ag * (n-1) + g) / n;
+      al = (al * (n-1) + l) / n;
+      out[i] = al === 0 ? 100 : 100 - 100 / (1 + ag/al);
+    }
+  }
+  return out;
+}
+
+/* ──────────────────── volume profile → S/R levels ──────────────────── */
+/* Each day's volume is spread uniformly across that day's high-low range,
+   so a wide bar contributes to every price it traded through instead of
+   dumping all of its volume on one point. Levels are local peaks of the
+   resulting volume-by-price histogram. */
+function profileLevels(bars, price, opt){
+  const BINS = (opt && opt.bins) || 120;
+  const SEP  = (opt && opt.sepPct) || 1.5;   // min % gap between two levels
+  const STR  = (opt && opt.minStrength) || 1.0;  // x mean bin volume
+
+  if (!bars.length) return { nodes:[], res:[], sup:null };
+  let lo = Infinity, hi = -Infinity;
+  for (const b of bars){ if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; }
+  if (!(hi > lo)) return { nodes:[], res:[], sup:null };
+
+  const w = (hi - lo) / BINS;
+  const hist = new Float64Array(BINS);
+  for (const b of bars){
+    if (!(b.v > 0)) continue;
+    if (b.h <= b.l){
+      hist[Math.min(BINS-1, Math.max(0, Math.floor((b.l - lo)/w)))] += b.v;
+      continue;
+    }
+    const i0 = Math.max(0, Math.floor((b.l - lo)/w));
+    const i1 = Math.min(BINS-1, Math.floor((b.h - lo)/w));
+    const span = b.h - b.l;
+    for (let i = i0; i <= i1; i++){
+      const e0 = lo + i*w, e1 = e0 + w;
+      const ov = Math.min(b.h, e1) - Math.max(b.l, e0);
+      if (ov > 0) hist[i] += b.v * ov / span;
+    }
+  }
+
+  let total = 0;
+  for (let i = 0; i < BINS; i++) total += hist[i];
+  const mean = total / BINS;
+
+  const peaks = [];
+  for (let i = 1; i < BINS-1; i++){
+    if (hist[i] >= hist[i-1] && hist[i] >= hist[i+1] && hist[i] >= mean*STR)
+      peaks.push({ p: lo + (i+0.5)*w, s: hist[i] });
+  }
+  // strongest first, then drop anything too close to a level already taken
+  peaks.sort((a,b) => b.s - a.s);
+  const nodes = [];
+  for (const c of peaks)
+    if (nodes.every(k => Math.abs(c.p - k.p) / k.p * 100 >= SEP)) nodes.push(c);
+  nodes.sort((a,b) => a.p - b.p);
+
+  const res = nodes.filter(n => n.p > price).sort((a,b) => a.p - b.p).slice(0,2);
+  const below = nodes.filter(n => n.p < price).sort((a,b) => b.p - a.p);
+  return { nodes, res, sup: below[0] || null, total };
+}
+
+/* ───────────────── trend state & triggers ─────────────────
+   Design rule: each indicator does exactly one job.
+     slow pair (SMA 50/100) -> regime gate, never an entry
+     fast pair (EMA 9/21)   -> the timing trigger
+     volume-profile levels  -> the one event that is not an MA derivative
+     RSI + volume           -> confirmation flags, never triggers
+   Everything here reads closed bars only. No backtest, no forecast. */
+
+function crossovers(fast, slow){
+  const out = [];
+  for (let i = 1; i < fast.length; i++){
+    if (fast[i] == null || slow[i] == null || fast[i-1] == null || slow[i-1] == null) continue;
+    const d0 = fast[i-1] - slow[i-1], d1 = fast[i] - slow[i];
+    if (d0 <= 0 && d1 > 0) out.push({ i, dir:1 });
+    else if (d0 >= 0 && d1 < 0) out.push({ i, dir:-1 });
+  }
+  return out;
+}
+
+/* gate: a long trigger only counts while SMA 50 sits above SMA 100 */
+const gateOpen = (I, i) => I.s50[i] != null && I.s100[i] != null && I.s50[i] > I.s100[i];
+
+function trendState(I, i, close){
+  const a = I.ema9[i], b = I.ema21[i], c = I.s50[i], d = I.s100[i];
+  if ([a,b,c,d].some(v => v == null))
+    return { key:'flat', label:'לא ניתן לקבוע', why:'חסרים ממוצעים ארוכים בתחילת הסדרה' };
+  const bull  = a > b && b > c && c > d;
+  const bear  = a < b && b < c && c < d;
+  const above = close > a && close > b && close > c && close > d;
+  const below = close < a && close < b && close < c && close < d;
+  if (bull && above) return { key:'bull', label:'Uptrend חזק',   why:'הסדר 9>21>50>100 והמחיר מעל כל הארבעה' };
+  if (bull)          return { key:'bull', label:'Uptrend',        why:'הסדר 9>21>50>100, אך המחיר לא מעל כולם' };
+  if (bear && below) return { key:'bear', label:'Downtrend חזק',  why:'הסדר הפוך והמחיר מתחת לכל הארבעה' };
+  if (bear)          return { key:'bear', label:'Downtrend',      why:'הסדר הפוך' };
+  return { key:'flat', label:'מעבר / חסר מגמה', why:'הממוצעים לא מסודרים בסדר אחד' };
+}
+
+/* the two confirmation flags, read on the trigger bar itself */
+function flagsAt(I, i, bars){
+  return {
+    rsi: (I.rsi[i] != null && I.rsiMa[i] != null) ? I.rsi[i] > I.rsiMa[i] : null,
+    vol: (I.volAvg[i] != null) ? bars[i].v > I.volAvg[i] : null,
+  };
+}
+
+/* most recent close-through of any currently displayed level, within [from,to] */
+function lastLevelBreak(bars, levels, from, to){
+  let best = null;
+  for (const L of levels){
+    for (let i = Math.max(from + 1, 1); i <= to; i++){
+      const p0 = bars[i-1].c, p1 = bars[i].c;
+      let dir = 0;
+      if (p0 <= L.p && p1 > L.p) dir = 1;
+      else if (p0 >= L.p && p1 < L.p) dir = -1;
+      if (dir && (!best || i > best.i)) best = { i, dir, level:L.p, tag:L.tag };
+    }
+  }
+  return best;
+}
+
+/* ───────────────────────────── data ───────────────────────────── */
+
+const isCrypto = s => /(USDT|USDC|BUSD|FDUSD)$/.test(s);
+
+async function fetchStock(sym){
+  const u = `https://api.stockanalysis.com/api/symbol/s/${encodeURIComponent(sym.toLowerCase())}/history?range=5Y&period=Daily`;
+  const r = await fetch(u);
+  if (!r.ok) throw new Error(`stockanalysis HTTP ${r.status}`);
+  const j = await r.json();
+  const rows = (j && j.data) || [];
+  if (!rows.length) throw new Error('no rows returned');
+  return rows.map(x => ({ t:x.t, o:+x.o, h:+x.h, l:+x.l, c:+x.c, v:+x.v }))
+             .filter(b => isFinite(b.c))
+             .sort((a,b) => a.t < b.t ? -1 : 1);
+}
+
+async function fetchCrypto(sym){
+  const u = `https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(sym)}&interval=1d&limit=1000`;
+  const r = await fetch(u);
+  if (!r.ok) throw new Error(`binance HTTP ${r.status}`);
+  const k = await r.json();
+  if (!Array.isArray(k) || !k.length) throw new Error('no klines returned');
+  return k.map(a => ({
+    t: new Date(a[0]).toISOString().slice(0,10),
+    o:+a[1], h:+a[2], l:+a[3], c:+a[4], v:+a[5]
+  }));
+}
+
+/* ──────────────────────────── chart ──────────────────────────── */
+
+const chart = LC.createChart(document.getElementById('chart'), {
+  layout:{ background:{ type:'solid', color:'#0d1117' }, textColor:'#8b949e',
+           fontSize:11, panes:{ separatorColor:'#262d38', separatorHoverColor:'#30363d' } },
+  grid:{ vertLines:{ color:'#1b2129' }, horzLines:{ color:'#1b2129' } },
+  rightPriceScale:{ borderColor:'#262d38' },
+  timeScale:{ borderColor:'#262d38', rightOffset:6 },
+  crosshair:{ mode:LC.CrosshairMode.Normal,
+              vertLine:{ color:'#48505a', labelBackgroundColor:'#30363d' },
+              horzLine:{ color:'#48505a', labelBackgroundColor:'#30363d' } },
+  localization:{ locale:'en-US' },
+  autoSize:true,
+});
+
+const candles = chart.addSeries(LC.CandlestickSeries, {
+  upColor:'#26a69a', downColor:'#ef5350', borderVisible:false,
+  wickUpColor:'#26a69a', wickDownColor:'#ef5350',
+}, 0);
+
+const MAS = [
+  { key:'ema9',   label:'EMA 9',   color:'#00c853' },
+  { key:'ema21',  label:'EMA 21',  color:'#f6c309' },
+  { key:'sma50',  label:'SMA 50',  color:'#fb9800' },
+  { key:'sma100', label:'SMA 100', color:'#f60c0c' },
+];
+const maSeries = {};
+for (const m of MAS)
+  maSeries[m.key] = chart.addSeries(LC.LineSeries, {
+    color:m.color, lineWidth:2, priceLineVisible:false, lastValueVisible:false,
+    crosshairMarkerVisible:false,
+  }, 0);
+
+const volSeries = chart.addSeries(LC.HistogramSeries, {
+  priceFormat:{ type:'volume' }, priceLineVisible:false, lastValueVisible:false,
+}, 1);
+
+const rsiSeries = chart.addSeries(LC.LineSeries, {
+  color:'#9c88ff', lineWidth:2, priceLineVisible:false, lastValueVisible:false,
+  priceFormat:{ type:'price', precision:1, minMove:0.1 },
+}, 2);
+const rsiMaSeries = chart.addSeries(LC.LineSeries, {
+  color:'#f6c309', lineWidth:1.5, priceLineVisible:false, lastValueVisible:false,
+  crosshairMarkerVisible:false,
+}, 2);
+
+// 70 / 50 / 30 guides on the RSI pane
+for (const [v, dash] of [[70, LC.LineStyle.Dashed], [50, LC.LineStyle.Dotted], [30, LC.LineStyle.Dashed]])
+  rsiSeries.createPriceLine({ price:v, color:'#3d444d', lineWidth:1, lineStyle:dash,
+                              axisLabelVisible:true, title:'' });
+
+/* RSI legend lives inside the RSI pane, not in the header strip. A pane text
+   primitive keeps it anchored through resizes — no manual geometry. */
+LC.createTextWatermark(chart.panes()[2], {
+  horzAlign:'left', vertAlign:'top',
+  lines:[
+    { text:'RSI 14',     color:'#9c88ff', fontSize:11, fontStyle:'600' },
+    { text:'RSI SMA 14', color:'#f6c309', fontSize:11, fontStyle:'600' },
+  ],
+});
+
+function sizePanes(){
+  const panes = chart.panes();
+  const h = document.getElementById('wrap').clientHeight;
+  if (panes.length >= 3){
+    panes[1].setHeight(Math.max(60, Math.round(h * 0.14)));
+    panes[2].setHeight(Math.max(80, Math.round(h * 0.22)));
+  }
+}
+window.addEventListener('resize', () => setTimeout(sizePanes, 60));
+
+/* ──────────────────────────── state ──────────────────────────── */
+
+let BARS = [];
+let IND  = null;          // every indicator series, aligned to BARS by index
+let TECH = null;          // the technical read, published for the fundamental layer
+let priceLines = [];
+const $ = id => document.getElementById(id);
+
+/* ISO -> Israeli day/month/year */
+const heDate = iso => { const p = String(iso).slice(0,10).split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
+
+/* 5 years are fetched so you can zoom out, but 5y of dailies on one screen is
+   unreadable — open on roughly the last trading year instead. */
+const INITIAL_BARS = 252;
+
+function veil(on, title, why){
+  const v = $('veil');
+  v.classList.toggle('on', !!on);
+  if (on){ $('veil-t').textContent = title || ''; $('veil-w').textContent = why || ''; }
+}
+
+/* threshold on |n| so negatives format the same way positives do */
+function fmt(n){
+  const a = Math.abs(n);
+  if (a >= 1000) return n.toLocaleString('en-US', { maximumFractionDigits:0 });
+  if (a >= 1)    return n.toFixed(2);
+  return n.toPrecision(4);
+}
+
+function paintQuote(sym){
+  const last = BARS[BARS.length-1], prev = BARS[BARS.length-2];
+  $('qsym').textContent = sym;
+  $('qpx').textContent  = fmt(last.c);
+  if (prev){
+    const d = last.c - prev.c, p = d / prev.c * 100;
+    const el = $('qch');
+    el.textContent = `${d >= 0 ? '+' : ''}${fmt(d)} (${d >= 0 ? '+' : ''}${p.toFixed(2)}%)`;
+    el.className = 'q-ch ' + (d >= 0 ? 'pos' : 'neg');
+  }
+}
+
+function paintSeries(){
+  const closes = BARS.map(b => b.c);
+  const t = BARS.map(b => b.t);
+
+  candles.setData(BARS.map(b => ({ time:b.t, open:b.o, high:b.h, low:b.l, close:b.c })));
+
+  const r = rsi(closes, 14);
+  IND = {
+    ema9:  ema(closes, 9),
+    ema21: ema(closes, 21),
+    s50:   sma(closes, 50),
+    s100:  sma(closes, 100),
+    rsi:   r,
+    rsiMa: sma(r, 14),
+    volAvg:sma(BARS.map(b => b.v), 50),
+  };
+
+  const byKey = { ema9:IND.ema9, ema21:IND.ema21, sma50:IND.s50, sma100:IND.s100 };
+  for (const m of MAS)
+    maSeries[m.key].setData(
+      byKey[m.key].map((v,i) => v == null ? null : ({ time:t[i], value:v })).filter(Boolean));
+
+  volSeries.setData(BARS.map((b,i) => ({
+    time:b.t, value:b.v,
+    color: (i > 0 && b.c < BARS[i-1].c) ? '#ef535066' : '#26a69a66',
+  })));
+
+  rsiSeries.setData(IND.rsi.map((v,i) => v == null ? null : ({ time:t[i], value:v })).filter(Boolean));
+  rsiMaSeries.setData(IND.rsiMa.map((v,i) => v == null ? null : ({ time:t[i], value:v })).filter(Boolean));
+}
+
+/* ───────────────────── levels: draw + report ───────────────────── */
+
+const LEVEL_COLOR = '#2962ff';   // keep in sync with --level in the stylesheet
+
+function clearLines(){
+  for (const l of priceLines) candles.removePriceLine(l);
+  priceLines = [];
+}
+
+function cellRes(n, price, i){
+  const pct = (n.p / price - 1) * 100;
+  return `<div class="cell r">
+    <div class="c-lbl">התנגדות ${i}</div>
+    <div class="c-px">${fmt(n.p)}</div>
+    <div class="c-meta">+${pct.toFixed(1)}% מהמחיר</div>
+  </div>`;
+}
+
+function renderLevels(){
+  if (!BARS.length) return;
+  const vr = chart.timeScale().getVisibleLogicalRange();
+  let from = 0, to = BARS.length - 1;
+  if (vr){
+    from = Math.max(0, Math.floor(vr.from));
+    to   = Math.min(BARS.length - 1, Math.ceil(vr.to));
+  }
+  const win = BARS.slice(from, to + 1);
+  if (win.length < 20){ $('lv-win').textContent = 'טווח צר מדי לחישוב'; return; }
+
+  const price = BARS[BARS.length - 1].c;
+  const { nodes, res, sup } = profileLevels(win, price);
+
+  $('lv-win').textContent =
+    `חלון: ${heDate(win[0].t)} → ${heDate(win[win.length-1].t)} · ${win.length} נרות · ${nodes.length} צבירים זוהו`;
+
+  clearLines();
+  const html = [];
+
+  res.forEach((n, i) => {
+    html.push(cellRes(n, price, i + 1));
+    priceLines.push(candles.createPriceLine({
+      price:n.p, color:LEVEL_COLOR, lineWidth:2, lineStyle:LC.LineStyle.Solid,
+      axisLabelVisible:true, title:`R${i+1}`,
+    }));
+  });
+  for (let i = res.length; i < 2; i++)
+    html.push(`<div class="cell none"><div class="c-lbl">התנגדות ${i+1}</div>
+      <div class="c-none">אין צביר נפח מעל המחיר בחלון הזה</div></div>`);
+
+  if (sup){
+    const pct = (sup.p / price - 1) * 100;
+    html.push(`<div class="cell s">
+      <div class="c-lbl">תמיכה</div>
+      <div class="c-px">${fmt(sup.p)}</div>
+      <div class="c-meta">${pct.toFixed(1)}% מהמחיר</div>
+    </div>`);
+    priceLines.push(candles.createPriceLine({
+      price:sup.p, color:LEVEL_COLOR, lineWidth:2, lineStyle:LC.LineStyle.Solid,
+      axisLabelVisible:true, title:'S1',
+    }));
+  } else {
+    html.push(`<div class="cell none"><div class="c-lbl">תמיכה</div>
+      <div class="c-none">אין צביר נפח מתחת למחיר — הנכס נסחר מתחת לכל אזורי הצבירה בחלון</div></div>`);
+  }
+
+  $('lv').innerHTML = html.join('');
+
+  /* the level break is the one event tied to the levels, so it belongs here —
+     it moves with the view exactly as the levels do */
+  const shown = res.map((n,i) => ({ p:n.p, tag:'R'+(i+1) }));
+  if (sup) shown.push({ p:sup.p, tag:'S1' });
+  const brk = lastLevelBreak(BARS, shown, from, to);
+  if (brk){
+    $('lv-win').textContent +=
+      ` · פריצה אחרונה: ${heDate(BARS[brk.i].t)} ${brk.dir > 0 ? 'מעל' : 'מתחת ל־'}${fmt(brk.level)} (${brk.tag})`;
+    brkMarkers.setMarkers([{
+      time:BARS[brk.i].t, position:brk.dir > 0 ? 'belowBar' : 'aboveBar',
+      color:LEVEL_COLOR, shape:'circle', text:brk.tag,
+    }]);
+  } else {
+    brkMarkers.setMarkers([]);
+  }
+
+  $('lv-note').textContent =
+    'רמות: נפח כל יום מתפזר אחיד על טווח הגבוה-נמוך שלו · 120 רצועות · מרווח מינימלי 1.5% · '
+    + 'רמה = שיא מקומי בהיסטוגרמה מעל הנפח הממוצע לרצועה. הרמות והפריצה מחושבות על הטווח הנראה ומתעדכנות בזום. '
+    + `ציון הנקודה, לעומת זאת, תמיד מחושב על חלון קבוע של ${PROFILE_LOOKBACK} נרות ולכן אינו זז בזום. `
+    + `האחוזון משווה את היום להיסטוריה של אותו נכס בלבד — "חריג עבור הנכס", לא "טוב באופן מוחלט" — `
+    + 'וכל ציון היסטורי מחושב מול רמות מחלון שמסתיים באותו נר, בלי הצצה לעתיד. '
+    + 'שים לב שמצבי מגמה נמשכים שבועות, כלומר הימים אינם בלתי-תלויים: מאות ימים הם עשרות אפיזודות עצמאיות בלבד, '
+    + 'ולכן הביטחון באחוזון קטן ממה שמספר הימים מרמז. תנאי שאינו ישים מסומן n/a ואינו נספר במכנה.';
+}
+
+/* levels follow the view, so they recompute on pan/zoom (debounced) */
+let rq = null;
+chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+  clearTimeout(rq);
+  rq = setTimeout(renderLevels, 160);
+});
+
+/* ───── the current bar, graded ─────────────────────────────────────────
+   No veto: a failed condition just fails, it never kills the reading — a
+   screen that rejects almost every day carries no information (same reason
+   the GARP scorecard relaxes PEG to 2). The score is grouped into four
+   categories so you can see WHERE the setup is weak, and it is placed
+   against the asset's own history so "5 of 8" means something.
+
+   Two deliberate choices worth defending:
+   (a) The score always uses a FIXED 252-bar profile window, never the
+       visible range, so it does not move when you zoom. The blue lines do
+       follow the view; at the default 1-year view the two coincide.
+   (b) Historical scores recompute each bar's levels from a window ENDING at
+       that bar. Scoring a 2024 bar against today's levels would leak future
+       data into the past and inflate the percentile. */
+
+const FRESH_DAYS       = 5;    // a 9/21 cross older than a week is not "now"
+const PROFILE_LOOKBACK = 252;  // bars each profile (today's and historical) is built on
+const ROOM_MIN_PCT     = 3;
+const RR_MIN           = 2;
+const PCT_WINDOWS = [{ n:252, label:'שנה' }, { n:504, label:'שנתיים' }];
+
+const COND = [
+  { key:'gate',  cat:'trend',    label:'SMA 50 מעל SMA 100' },
+  { key:'above', cat:'trend',    label:'מחיר מעל SMA 50' },
+  { key:'fresh', cat:'trigger',  label:'טריגר 9/21 מעלה ב-' + FRESH_DAYS + ' הימים האחרונים' },
+  { key:'rsiMa', cat:'momentum', label:'RSI מעל ה-SMA שלו' },
+  { key:'rsiOb', cat:'momentum', label:'RSI מתחת ל-70' },
+  { key:'vol',   cat:'momentum', label:'נפח מעל ממוצע 50' },
+  { key:'room',  cat:'geometry', label:'מרווח מעל ' + ROOM_MIN_PCT + '% עד ההתנגדות' },
+  { key:'rr',    cat:'geometry', label:'יחס סיכוי-סיכון ' + RR_MIN + ':1 ומעלה' },
+];
+const CATS = [
+  { key:'trend',    label:'הקשר מגמה' },
+  { key:'trigger',  label:'טריות הטריגר' },
+  { key:'momentum', label:'מומנטום' },
+  { key:'geometry', label:'גיאומטריה' },
+];
+
+/* per-bar flag: did an up-cross happen within the last FRESH_DAYS bars? */
+function freshUpFlags(){
+  const n = BARS.length;
+  const up = new Array(n).fill(false);
+  for (const x of crossovers(IND.ema9, IND.ema21)) if (x.dir > 0) up[x.i] = true;
+  const fresh = new Array(n).fill(false);
+  for (let i = 0; i < n; i++)
+    for (let j = Math.max(0, i - FRESH_DAYS + 1); j <= i; j++)
+      if (up[j]) { fresh[i] = true; break; }
+  return fresh;
+}
+
+/* null = not applicable; it drops out of the denominator, never counted as a fail */
+function evalConditions(i, fresh, lv){
+  const c = BARS[i].c;
+  const nearRes = lv.res.length ? lv.res[0].p : null;
+  const room = nearRes != null ? (nearRes - c) / c * 100 : null;
+  const risk = lv.sup ? (c - lv.sup.p) / c * 100 : null;
+  const rr   = (room != null && risk != null && risk > 0) ? room / risk : null;
+  return {
+    gate:  (IND.s50[i] != null && IND.s100[i] != null) ? IND.s50[i] > IND.s100[i] : null,
+    above: (IND.s50[i] != null) ? c > IND.s50[i] : null,
+    fresh: fresh[i],
+    rsiMa: (IND.rsi[i] != null && IND.rsiMa[i] != null) ? IND.rsi[i] > IND.rsiMa[i] : null,
+    rsiOb: (IND.rsi[i] != null) ? IND.rsi[i] < 70 : null,
+    vol:   (IND.volAvg[i] != null) ? BARS[i].v > IND.volAvg[i] : null,
+    room:  room != null ? room > ROOM_MIN_PCT : null,
+    rr:    rr != null ? rr >= RR_MIN : null,
+    _room: room, _risk: risk, _rr: rr,
+  };
+}
+
+function tally(res, keys){
+  let p = 0, a = 0;
+  for (const k of keys){ const v = res[k]; if (v === null) continue; a++; if (v) p++; }
+  return { passed:p, applicable:a, ratio: a ? p / a : null };
+}
+const scoreAll = res => tally(res, COND.map(c => c.key));
+
+/* rolling history — the expensive bit, run once per symbol, not per zoom */
+function buildHistory(maxBack){
+  const fresh = freshUpFlags();
+  const n = BARS.length;
+  const start = Math.max(PROFILE_LOOKBACK, n - maxBack);
+  const out = [];
+  for (let i = start; i < n; i++){                       // excludes today
+    const lv = profileLevels(BARS.slice(i - PROFILE_LOOKBACK + 1, i + 1), BARS[i].c);
+    const s = scoreAll(evalConditions(i, fresh, lv));
+    if (s.ratio != null) out.push(s.ratio);
+  }
+  return { fresh, ratios: out };
+}
+
+const median = xs => {
+  if (!xs.length) return null;
+  const a = [...xs].sort((x,y) => x - y), m = a.length;
+  return m % 2 ? a[(m-1)/2] : (a[m/2-1] + a[m/2]) / 2;
+};
+const pctlOf = (xs, v) => xs.length ? xs.filter(x => x < v).length / xs.length * 100 : null;
+
+/* Triggers ride the ribbon; a level break is a price event and stays on the candles. */
+const markers    = LC.createSeriesMarkers(maSeries.ema21, []);
+const brkMarkers = LC.createSeriesMarkers(candles, []);
+
+const mark = v => v === null ? '<span style="color:#6e7681">n/a</span>'
+                : v ? '<span class="ok">✓</span>' : '<span class="no">✗</span>';
+
+function renderAssessment(){
+  if (!IND || BARS.length < PROFILE_LOOKBACK + 5) { $('st').innerHTML = ''; return; }
+  const n = BARS.length, last = n - 1;
+
+  const H = buildHistory(Math.max(...PCT_WINDOWS.map(w => w.n)));
+  const lvNow = profileLevels(BARS.slice(last - PROFILE_LOOKBACK + 1, last + 1), BARS[last].c);
+  const res   = evalConditions(last, H.fresh, lvNow);
+  const sc    = scoreAll(res);
+
+  /* ---- card 1: score + the two percentiles ---- */
+  const rows = PCT_WINDOWS.map(w => {
+    const xs = H.ratios.slice(-w.n);
+    const p  = pctlOf(xs, sc.ratio), md = median(xs);
+    if (p === null) return `<div>אחוזון על ${w.label}: <span style="color:#6e7681">אין די היסטוריה</span></div>`;
+    return `<div>אחוזון על ${w.label}: <b class="mono">${p.toFixed(0)}%</b>`
+         + ` <span style="color:#6e7681">(חציון ${Math.round(md * sc.applicable)} מתוך ${sc.applicable}`
+         + ` · ${xs.length} ימים)</span></div>`;
+  }).join('');
+
+  const card1 = `<div class="cell st ${sc.ratio >= 0.75 ? 'bull' : sc.ratio >= 0.5 ? 'flat' : 'bear'}">
+      <div class="c-lbl">ציון הנקודה</div>
+      <div class="c-px">${sc.passed} מתוך ${sc.applicable} תנאים</div>
+      <div class="c-meta">${rows}</div>
+    </div>`;
+
+  /* ---- card 2: where it is strong and where it is weak ---- */
+  const prof = CATS.map(ct => {
+    const keys = COND.filter(c => c.cat === ct.key).map(c => c.key);
+    const t = tally(res, keys);
+    const txt = t.applicable ? `${t.passed}/${t.applicable}` : 'n/a';
+    const cls = !t.applicable ? '' : t.passed === t.applicable ? 'ok' : t.passed === 0 ? 'no' : '';
+    return `<div>${ct.label}: <b class="${cls}">${txt}</b></div>`;
+  }).join('');
+  const card2 = `<div class="cell st flat">
+      <div class="c-lbl">פרופיל לפי קטגוריה</div>
+      <div class="c-meta" style="margin-top:5px">${prof}</div>
+    </div>`;
+
+  /* ---- card 3: the whole checklist, passes included ----
+     Listing only the failures hid which conditions actually held — for a
+     research tool you want to read the full ledger, not just the deficit. */
+  const failed = COND.filter(c => res[c.key] === false);
+  const card3 = `<div class="cell st ${failed.length ? 'bear' : 'bull'}">
+      <div class="c-lbl">צ׳ק-ליסט</div>
+      <div class="c-meta" style="margin-top:5px">${
+        COND.map(c => `<div>${mark(res[c.key])} ${c.label}</div>`).join('')
+      }</div>
+    </div>`;
+
+  $('st').innerHTML = card1 + card2 + card3;
+
+  /* published for the fundamental layer's quality x timing line */
+  TECH = { passed:sc.passed, applicable:sc.applicable, ratio:sc.ratio,
+           pct1y: pctlOf(H.ratios.slice(-252), sc.ratio),
+           pct2y: pctlOf(H.ratios, sc.ratio) };
+
+  /* ---- header sub-line: trend + the last trigger (view-independent) ---- */
+  const tr = trendState(IND, last, BARS[last].c);
+  const xs = crossovers(IND.ema9, IND.ema21);
+  const lastX = xs[xs.length - 1];
+  $('st-sub').innerHTML =
+    `מגמה: <b>${tr.label}</b>`
+    + (lastX ? ` · טריגר אחרון: 9/21 ${lastX.dir > 0 ? 'מעלה' : 'מטה'},`
+             + ` <span class="mono">${heDate(BARS[lastX.i].t)}</span>`
+             + ` (לפני ${n - 1 - lastX.i} ימי מסחר)` : '')
+    + (res._rr != null ? ` · סיכוי-סיכון <span class="mono">${res._rr.toFixed(1)}:1</span>` : '');
+
+  /* ---- ribbon markers for every cross in the series ---- */
+  const m = [];
+  for (const x of xs){
+    if (x.dir > 0 && gateOpen(IND, x.i))
+      m.push({ time:BARS[x.i].t, position:'belowBar', color:'#ffffff', shape:'arrowUp',   text:'9/21' });
+    else if (x.dir < 0)
+      m.push({ time:BARS[x.i].t, position:'aboveBar', color:'#ffffff', shape:'arrowDown', text:'9/21' });
+  }
+  m.sort((a,b) => a.time < b.time ? -1 : a.time > b.time ? 1 : 0);
+  markers.setMarkers(m);
+}
+
+/* ═════════════════════ fundamentals ═════════════════════════════════
+   Two sources, on purpose:
+     covered names -> the committed data.json of the existing terminal. That
+       pipeline is mine, versioned and CI-validated, so it stays the primary.
+     anything else -> stockanalysis' timeseries API, one request per metric.
+       It is an undocumented internal API, so it is used ONLY to extend reach
+       beyond the covered universe. If it dies, free-text lookups lose their
+       fundamental panel and nothing else breaks.
+   Crypto has no fundamentals and says so. */
+
+const UNIVERSE_URL = 'https://barbarzilay100-coder.github.io/equity-research-terminal/data.json';
+const TS_URL = (t, m) => `https://stockanalysis.com/api/timeseries/s/${encodeURIComponent(t.toLowerCase())}/${m}`;
+const SEC_UA_NOTE = 'sector via SEC SIC';
+
+const FRESH_PRICE_DAYS = 30;   // pe / fwd pe / target are daily — stale means undefined
+const FRESH_STMT_DAYS  = 200;  // statements are quarterly, a one-quarter lag is normal
+
+const GROWTH_SECTORS = new Set(['Technology', 'Communication Services']);
+
+/* the existing terminal's applicability rules, verbatim */
+function criterionApplies(name, sector){
+  if (sector === 'Financial Services' &&
+      (name === 'Rule of 40' || name === 'FCF Margin' || name === 'Balance Sheet')) return false;
+  if (name === 'Rule of 40' && !GROWTH_SECTORS.has(sector)) return false;
+  return true;
+}
+
+/* the existing terminal's 8 criteria and thresholds, verbatim */
+function garp(d){
+  const r40    = (d.revGrowth != null && d.fcfMargin != null) ? d.revGrowth + d.fcfMargin : null;
+  const disc   = (d.forwardPE != null && d.pe != null) ? d.pe - d.forwardPE : null;
+  const C = [
+    { name:'Revenue Growth',   thr:'> 10%',        val:d.revGrowth,  disp:d.revGrowth  != null ? d.revGrowth.toFixed(1)+'%' : null, pass:v => v > 10 },
+    { name:'Rule of 40',       thr:'≥ 40',         val:r40,          disp:r40          != null ? r40.toFixed(0) : null,             pass:v => v >= 40 },
+    { name:'FCF Margin',       thr:'> 15%',        val:d.fcfMargin,  disp:d.fcfMargin  != null ? d.fcfMargin.toFixed(1)+'%' : null, pass:v => v > 15 },
+    { name:'Net Margin',       thr:'> 15%',        val:d.netMargin,  disp:d.netMargin  != null ? d.netMargin.toFixed(1)+'%' : null, pass:v => v > 15 },
+    { name:'Return on Equity', thr:'> 15%',        val:d.roe,        disp:d.roe        != null ? d.roe.toFixed(1)+'%' : null,       pass:v => v > 15 },
+    { name:'Valuation (PEG)',  thr:'< 2',          val:d.peg,        disp:d.peg        != null ? d.peg.toFixed(2) : null,           pass:v => v < 2 },
+    { name:'Fwd Multiple',     thr:'Fwd < Trail',  val:disc,         disp:(d.forwardPE != null && d.pe != null) ? d.forwardPE.toFixed(1)+'x vs '+d.pe.toFixed(1)+'x' : null, pass:v => v > 0 },
+    { name:'Balance Sheet',    thr:'D/E < 1.5',    val:d.debtEquity, disp:d.debtEquity != null ? d.debtEquity.toFixed(2) : null,    pass:v => v < 1.5 },
+  ];
+  let pass = 0, counted = 0;
+  const rows = C.map(c => {
+    if (!criterionApplies(c.name, d.sector))
+      return { name:c.name, thr:c.thr, disp:'לא ישים לסקטור', st:'skip' };
+    if (c.val != null && !isNaN(c.val)){ counted++; if (c.pass(c.val)){ pass++; return { ...c, st:'pass' }; } return { ...c, st:'fail' }; }
+    return { name:c.name, thr:c.thr, disp:'—', st:'na' };
+  });
+  return { rows, pass, counted, ratio: counted ? pass / counted : null };
+}
+const verdictOf = r =>
+  r == null      ? { label:'—',      key:'flat' } :
+  r >= 0.85      ? { label:'Strong', key:'bull' } :
+  r >= 0.6       ? { label:'Solid',  key:'bull' } :
+  r >= 0.4       ? { label:'Mixed',  key:'flat' } :
+                   { label:'Weak',   key:'bear' };
+
+let UNIV = null;                 // ticker -> company object from data.json
+let UNIV_META = null;
+const fundCache = Object.create(null);
+
+async function loadUniverse(){
+  if (UNIV) return UNIV;
+  const r = await fetch(UNIVERSE_URL);
+  if (!r.ok) throw new Error('universe HTTP ' + r.status);
+  const j = await r.json();
+  UNIV_META = { generated: j.generated, count: j.count };
+  UNIV = Object.create(null);
+  for (const c of j.companies) UNIV[c.ticker.toUpperCase()] = c;
+  return UNIV;
+}
+
+async function tsLast(sym, metric){
+  try {
+    const r = await fetch(TS_URL(sym, metric));
+    if (!r.ok) return null;
+    const j = await r.json();
+    const a = ((j && j.data) || []).filter(p => p && p[1] != null);
+    if (!a.length) return null;
+    const [t, v] = a[a.length - 1];
+    return { v:+v, t, age: Math.round((Date.now() - t) / 86400000) };
+  } catch (e){ return null; }
+}
+/* a stale value is worse than no value: CULP's P/E is a real number from 2022 */
+const freshVal = (o, maxAge) => (o && o.age <= maxAge) ? o.v : null;
+
+async function sectorFromSEC(sym){
+  try {
+    const ri = await fetch(`https://stockanalysis.com/api/symbol/s/${encodeURIComponent(sym.toLowerCase())}/info`);
+    if (!ri.ok) return null;
+    const cik = ((await ri.json()).data || {}).cik;
+    if (!cik) return null;
+    const rs = await fetch(`https://data.sec.gov/submissions/CIK${cik}.json`);
+    if (!rs.ok) return null;
+    const sub = await rs.json();
+    const n = parseInt(sub.sic, 10);
+    if (!isFinite(n)) return null;
+    const bucket =
+      (n >= 6000 && n <= 6799) ? 'Financial Services' :
+      ((n >= 7370 && n <= 7379) || (n >= 3570 && n <= 3579) ||
+       [3674,3661,3663,3669,3672].includes(n)) ? 'Technology' :
+      (n >= 4800 && n <= 4899) ? 'Communication Services' : 'other';
+    return { sector:bucket, sic:sub.sic, desc:sub.sicDescription };
+  } catch (e){ return null; }
+}
+
+/* live path: reach beyond the covered universe */
+async function fetchFundLive(sym){
+  const q = await fetch(`https://stockanalysis.com/api/quotes/s/${encodeURIComponent(sym.toLowerCase())}`);
+  if (!q.ok) return null;                      // the only honest ticker validator: timeseries 200s on garbage
+  const M = ['revenueGrowth','fcfMargin','profitMargin','roe','pe','peForward','epsGrowth','debt','equity','priceTarget'];
+  const [vals, sec] = await Promise.all([Promise.all(M.map(m => tsLast(sym, m))), sectorFromSEC(sym)]);
+  const g = Object.fromEntries(M.map((m,i) => [m, vals[i]]));
+
+  const pe   = freshVal(g.pe,        FRESH_PRICE_DAYS);
+  const fpe  = freshVal(g.peForward, FRESH_PRICE_DAYS);
+  const eg   = freshVal(g.epsGrowth, FRESH_STMT_DAYS);
+  const debt = freshVal(g.debt,      FRESH_STMT_DAYS);
+  const eq   = freshVal(g.equity,    FRESH_STMT_DAYS);
+  const stamps = Object.values(g).filter(Boolean).map(o => o.t);
+
+  return {
+    src:'live', srcLabel:'stockanalysis (חי)',
+    asof: stamps.length ? new Date(Math.max(...stamps)).toISOString().slice(0,10) : null,
+    sector: sec ? sec.sector : null,
+    sectorNote: sec ? `${SEC_UA_NOTE} ${sec.sic}` : 'סקטור לא ידוע',
+    revGrowth: freshVal(g.revenueGrowth, FRESH_STMT_DAYS),
+    fcfMargin: freshVal(g.fcfMargin,     FRESH_STMT_DAYS),
+    netMargin: freshVal(g.profitMargin,  FRESH_STMT_DAYS),
+    roe:       freshVal(g.roe,           FRESH_STMT_DAYS),
+    pe, forwardPE: fpe,
+    peg: (pe != null && eg != null && eg > 0) ? pe / eg : null,
+    pegComputed: true,
+    debtEquity: (debt != null && eq != null && eq > 0) ? debt / eq : null,
+    ptAvg: freshVal(g.priceTarget, FRESH_PRICE_DAYS),
+    impliedPrice: null, impliedUpside: null,   // needs the whole universe's sector medians
+  };
+}
+
+function fundFromUniverse(c){
+  return {
+    src:'universe', srcLabel:'הפייפליין שלך',
+    asof: UNIV_META && UNIV_META.generated, sector: c.sector, sectorNote:null,
+    revGrowth:c.revGrowth, fcfMargin:c.fcfMargin, netMargin:c.netMargin, roe:c.roe,
+    pe:c.pe, forwardPE:c.forwardPE, peg:c.peg, pegComputed:false, debtEquity:c.debtEquity,
+    ptAvg:c.ptAvg, impliedPrice:c.impliedPrice, impliedUpside:c.impliedUpside,
+    impliedFrom:c.impliedFrom, refPrice:c.price, name:c.name,
+  };
+}
+
+const numOr = (v, f, suf) => v == null ? '<span style="color:#6e7681">—</span>' : f(v) + (suf || '');
+const stMark = st => st === 'pass' ? '<span class="ok">✓</span>'
+                   : st === 'fail' ? '<span class="no">✗</span>'
+                   : '<span style="color:#6e7681">–</span>';
+
+async function renderFundamental(sym){
+  const set = (sub, html, note) => { $('fu-sub').innerHTML = sub; $('fu').innerHTML = html; $('fu-note').textContent = note || ''; };
+
+  if (isCrypto(sym)){
+    set('', `<div class="cell st none"><div class="c-lbl">פונדמנטלי</div>
+      <div class="c-none">אין נתונים פונדמנטליים למטבעות — אין דוחות כספיים לנתח</div></div>`, '');
+    return;
+  }
+
+  set('טוען…', '', '');
+  let F = fundCache[sym];
+  if (!F){
+    try {
+      const U = await loadUniverse();
+      F = U[sym] ? fundFromUniverse(U[sym]) : await fetchFundLive(sym);
+    } catch (e){
+      try { F = await fetchFundLive(sym); } catch (e2){ F = null; }
+    }
+    if (F) fundCache[sym] = F;
+  }
+
+  if (!F){
+    set('', `<div class="cell st none"><div class="c-lbl">פונדמנטלי</div>
+      <div class="c-none">לא נמצאו נתונים פונדמנטליים ל-${sym}. הוא לא ברשימת ${UNIV_META ? UNIV_META.count : 126}
+      החברות של הפייפליין שלך, והמשיכה החיה לא החזירה נתונים.</div></div>`, '');
+    return;
+  }
+
+  const G = garp(F), V = verdictOf(G.ratio);
+  const price = BARS.length ? BARS[BARS.length-1].c : null;
+
+  const card1 = `<div class="cell st ${V.key}">
+      <div class="c-lbl">פסק פונדמנטלי</div>
+      <div class="c-px">${V.label} · ${G.pass} מתוך ${G.counted}</div>
+      <div class="c-meta">
+        <div>מקור: ${F.srcLabel}${F.asof ? ` · <span class="mono">${F.src === 'universe' ? F.asof : heDate(F.asof)}</span>` : ''}</div>
+        <div>סקטור: ${F.sector || 'לא ידוע'}${F.sectorNote ? ` <span style="color:#6e7681">(${F.sectorNote})</span>` : ''}</div>
+      </div>
+    </div>`;
+
+  const card2 = `<div class="cell st flat">
+      <div class="c-lbl">צ׳ק-ליסט GARP</div>
+      <div class="c-meta" style="margin-top:5px">${
+        G.rows.map(r => `<div>${stMark(r.st)} ${r.name}
+          <span style="color:#6e7681">${r.st === 'skip' ? '· לא ישים' : r.disp && r.disp !== '—' ? '· ' + r.disp : '· אין נתון'}</span></div>`).join('')
+      }</div>
+    </div>`;
+
+  const upside = p => (p != null && price) ? ` <span style="color:#6e7681">(${p > price ? '+' : ''}${((p/price-1)*100).toFixed(0)}%)</span>` : '';
+  const card3 = `<div class="cell st flat">
+      <div class="c-lbl">שווי ואיכות</div>
+      <div class="c-meta" style="margin-top:5px">
+        <div>ערך משתמע: ${F.impliedPrice != null
+            ? `<b class="mono">${fmt(F.impliedPrice)}</b>${upside(F.impliedPrice)}`
+            : '<span style="color:#6e7681">n/a — מחושב ממדיאן הסקטור, דורש את כל היוניברס</span>'}</div>
+        <div>יעד אנליסטים: ${numOr(F.ptAvg, v => `<b class="mono">${fmt(v)}</b>`)}${upside(F.ptAvg)}</div>
+        <div>מחיר בגרף: <b class="mono">${price != null ? fmt(price) : '—'}</b></div>
+        <div style="margin-top:4px">ROE ${numOr(F.roe, v => v.toFixed(1), '%')}
+          · מרווח נקי ${numOr(F.netMargin, v => v.toFixed(1), '%')}
+          · צמיחה ${numOr(F.revGrowth, v => v.toFixed(1), '%')}
+          · PEG ${numOr(F.peg, v => v.toFixed(2))}${F.pegComputed && F.peg != null ? ' <span style="color:#6e7681">(מחושב)</span>' : ''}</div>
+      </div>
+    </div>`;
+
+  /* quality x timing — the one statement neither layer makes alone.
+     The timing axis is the ABSOLUTE technical score, not the percentile.
+     The percentile answers "unusual for this asset", which on a collapsing
+     name reads high simply because every other day was worse — it would
+     label a falling knife "good timing". The percentile stays as context. */
+  let combined = '';
+  if (G.ratio != null && TECH && TECH.ratio != null){
+    const q = G.ratio >= 0.6, t = TECH.ratio >= 0.6;
+    combined = `<b>${q ? (t ? 'איכותית ותזמון טוב' : 'איכותית, תזמון גרוע')
+                       : (t ? 'חלשה פונדמנטלית, תזמון טוב' : 'חלשה ותזמון גרוע')}</b>`
+      + ` <span style="color:#6e7681">(פונדמנטלי ${G.pass}/${G.counted}`
+      + ` · טכני ${TECH.passed}/${TECH.applicable}`
+      + (TECH.pct1y != null ? `, אחוזון ${TECH.pct1y.toFixed(0)}%` : '') + ')</span>';
+  }
+
+  /* reconciliation: two sources for the same price */
+  let recon = '';
+  if (F.refPrice != null && price != null){
+    const gap = Math.abs(F.refPrice / price - 1) * 100;
+    recon = gap > 1
+      ? ` · <span class="no">פער מחיר ${gap.toFixed(1)}%</span> בין הפייפליין (${fmt(F.refPrice)}) לגרף (${fmt(price)})`
+      : ` · <span class="ok">מחירים תואמים</span> (${gap.toFixed(2)}% פער)`;
+  }
+  $('fu-sub').innerHTML = combined + recon;
+  $('fu').innerHTML = card1 + card2 + card3;
+  $('fu-note').textContent =
+    (F.src === 'universe'
+      ? 'הנתונים מהפייפליין שלך (yfinance), אותם 8 קריטריונים ואותם כללי התאמה לסקטור כמו בטרמינל הקיים. '
+      : 'הטיקר אינו ביוניברס שלך, ולכן הנתונים נמשכו חי מ-stockanalysis — API פנימי לא מתועד, עלול להשתנות. ')
+    + 'ערך שמקורו מיושן נחשב חסר ולא מוצג: מכפילים ויעד אנליסטים נדחים מעל '
+    + FRESH_PRICE_DAYS + ' ימים, נתוני דוחות מעל ' + FRESH_STMT_DAYS + ' ימים. '
+    + (F.pegComputed
+        ? 'PEG כאן מחושב כמכפיל רווח חלקי צמיחת הרווח בפועל — הגדרה שונה מזו של הפייפליין, שמשתמש בצמיחה חזויה ל-5 שנים. לא להשוות בין השניים. '
+        : '')
+    + 'קריטריון שאינו ישים לסקטור או שחסר לו נתון אינו נספר במכנה, ולכן ציונים של חברות שונות נמדדו מול מבחנים שונים.';
+}
+
+/* ──────────────────────────── load ──────────────────────────── */
+
+async function load(sym){
+  sym = (sym || '').trim().toUpperCase();
+  if (!sym) return;
+  veil(true, 'טוען ' + sym + '…', '');
+  try {
+    BARS = isCrypto(sym) ? await fetchCrypto(sym) : await fetchStock(sym);
+    if (BARS.length < 120) throw new Error(`only ${BARS.length} bars — not enough history`);
+    veil(false);
+    paintSeries();
+    paintQuote(sym);
+    const n = BARS.length;
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - INITIAL_BARS), to: n + 5 });
+    sizePanes();
+    renderAssessment();   // fixed windows: once per symbol, not per zoom
+    renderLevels();       // view-dependent: re-runs on every range change
+    renderFundamental(sym);   // async, paints when its sources answer
+  } catch (e){
+    veil(true, 'לא הצלחתי לטעון ' + sym,
+      isCrypto(sym)
+        ? 'המקור לקריפטו הוא Binance. בדוק שהצמד קיים — למשל BTCUSDT, ETHUSDT, SOLUSDT. (' + e.message + ')'
+        : 'המקור למניות הוא stockanalysis. בדוק שהטיקר קיים, או שהוא נסחר פחות מ-120 ימי מסחר. (' + e.message + ')');
+  }
+}
+
+$('go').onclick = () => load($('sym').value);
+$('sym').addEventListener('keydown', e => { if (e.key === 'Enter') load($('sym').value); });
+document.querySelectorAll('.chips button').forEach(b => b.onclick = () => {
+  $('sym').value = b.dataset.s; load(b.dataset.s);
+});
+
+load('ORCL');
+</script>
+</body>
+</html>

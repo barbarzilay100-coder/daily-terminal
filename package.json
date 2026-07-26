@@ -1,0 +1,13 @@
+{
+  "name": "technical-terminal",
+  "version": "1.0.0",
+  "description": "Daily technical research terminal with volume-profile levels and a layered fundamental read",
+  "private": true,
+  "scripts": {
+    "test": "node tests/e2e.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  },
+  "license": "MIT"
+}
