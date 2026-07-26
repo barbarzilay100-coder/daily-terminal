@@ -14,18 +14,18 @@
 <style>
   :root{
     --bg:#0a0c0f; --panel:#12151a; --line:#212731; --line2:#2b323d;
-    --ink:#e9e5dc; --dim:#79838f; --acc:#e3bc55;
+    --ink:#e9e5dc; --dim:#79838f; --acc:#2962ff;
 
-    /* The volume-profile ramp. Four steps of one hue, standing for how much volume
-       traded at a price — the brightest step is the heaviest bin. Colour carries a
-       number here, so nothing else on the page is allowed to be this loud. */
-    --vp-10:#2e2a1c; --vp-40:#5e5028; --vp-70:#9c8235; --vp-100:#e3bc55;
+    /* Each price level splits into the volume that accumulated there on up days and
+       on down days — the same rule the volume pane already uses. Brighter than the
+       ribbon on purpose: the profile is the reading, the ribbon is context. */
+    --vp-up:#35c48a; --vp-dn:#e2685c;
 
-    /* Same four hues the README names, held back so they sit under the ramp
-       rather than shouting over it. Fast to slow still reads green -> red. */
+    /* The four hues the README names, held a step back so the profile stays the
+       loudest thing on the chart. Fast to slow still reads green -> red. */
     --ma9:#4e9e7e; --ma21:#c9a94a; --ma50:#c4813c; --ma100:#c06a5c;
     --up:#4e9e7e; --down:#c06a5c;
-    --level:#e3bc55;   /* support & resistance share one colour */
+    --level:#2962ff;   /* support & resistance share one flat blue */
 
     --f-display:'Archivo',-apple-system,'Segoe UI',Arial,sans-serif;
     --f-mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -65,7 +65,7 @@
     font-family:var(--f-mono);
   }
   button:hover{background:#242a33}
-  button.go{background:var(--acc); border-color:var(--acc); color:#0a0c0f; font-weight:600}
+  button.go{background:var(--acc); border-color:var(--acc); color:#f2f6ff; font-weight:600}
   .chips{display:flex; gap:6px; flex-wrap:wrap}
   .chips button{padding:7px 10px; font-size:12px}
   .sep{width:1px; height:24px; background:var(--line)}
@@ -358,10 +358,20 @@ function profileLevels(bars, price, opt){
 
   const w = (hi - lo) / BINS;
   const hist = new Float64Array(BINS);
-  for (const b of bars){
+  /* The same volume, split by the direction of the bar that contributed it, so a
+     level can be drawn as what accumulated there on up days against down days.
+     `up` mirrors the rule the volume pane uses: a bar is down only if it closed
+     below the one before it, which makes the first bar of a window an up bar.
+     hist itself is untouched — the levels must not move because of this. */
+  const histUp = new Float64Array(BINS);
+  for (let j = 0; j < bars.length; j++){
+    const b = bars[j];
     if (!(b.v > 0)) continue;
+    const up = !(j > 0 && b.c < bars[j-1].c);
     if (b.h <= b.l){
-      hist[Math.min(BINS-1, Math.max(0, Math.floor((b.l - lo)/w)))] += b.v;
+      const k = Math.min(BINS-1, Math.max(0, Math.floor((b.l - lo)/w)));
+      hist[k] += b.v;
+      if (up) histUp[k] += b.v;
       continue;
     }
     const i0 = Math.max(0, Math.floor((b.l - lo)/w));
@@ -370,7 +380,11 @@ function profileLevels(bars, price, opt){
     for (let i = i0; i <= i1; i++){
       const e0 = lo + i*w, e1 = e0 + w;
       const ov = Math.min(b.h, e1) - Math.max(b.l, e0);
-      if (ov > 0) hist[i] += b.v * ov / span;
+      if (ov > 0){
+        const part = b.v * ov / span;
+        hist[i] += part;
+        if (up) histUp[i] += part;
+      }
     }
   }
 
@@ -402,9 +416,9 @@ function profileLevels(bars, price, opt){
 
   const res = nodes.filter(n => n.p > price).sort((a,b) => a.p - b.p).slice(0,2);
   const below = nodes.filter(n => n.p < price).sort((a,b) => b.p - a.p);
-  /* hist/lo/w ride along so the histogram can be drawn. They were local before and
-     the whole shape was discarded once the peaks had been picked out of it. */
-  return { nodes, res, sup: below[0] || null, total, hist, lo, w };
+  /* hist/histUp/lo/w ride along so the histogram can be drawn. They were local before
+     and the whole shape was discarded once the peaks had been picked out of it. */
+  return { nodes, res, sup: below[0] || null, total, hist, histUp, lo, w };
 }
 
 /* ───────────────── trend state & triggers ─────────────────
@@ -522,12 +536,11 @@ const candles = chart.addSeries(LC.CandlestickSeries, {
 
 /* Still green, yellow, orange, red fast to slow, as the README says — held back a
    step each so the ribbon reads as one object and leaves the profile the loudest
-   thing on screen. EMA 21 is deliberately a dark olive rather than a bright yellow:
-   the levels are gold, and at full brightness the two were the same colour on the
-   chart. Nothing but a level is allowed near that gold. */
+   thing on screen. The ribbon's green and red are the muted pair; the profile uses
+   a brighter one, and the levels are the blue that nothing else may take. */
 const MAS = [
   { key:'ema9',   label:'EMA 9',   color:'#4e9e7e' },
-  { key:'ema21',  label:'EMA 21',  color:'#8f8a3f' },
+  { key:'ema21',  label:'EMA 21',  color:'#c9a94a' },
   { key:'sma50',  label:'SMA 50',  color:'#c4813c' },
   { key:'sma100', label:'SMA 100', color:'#c06a5c' },
 ];
@@ -696,7 +709,7 @@ function paintSeries(){
 
 /* ───────────────────── levels: draw + report ───────────────────── */
 
-const LEVEL_COLOR = '#e3bc55';   // keep in sync with --level in the stylesheet
+const LEVEL_COLOR = '#2962ff';   // keep in sync with --level in the stylesheet
 
 function clearLines(){
   for (const l of priceLines) candles.removePriceLine(l);
@@ -709,15 +722,16 @@ function itemLevel(k, p, price){
        + `<span class="d">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</span></div>`;
 }
 
-/* The ramp is repeated here because canvas cannot read a custom property without a
+/* Repeated here because canvas cannot read a custom property without a
    getComputedStyle round trip, and this redraws on every pan. Keep in step with
-   --vp-10..100 above. */
-const VP_RAMP = ['#2e2a1c','#5e5028','#9c8235','#e3bc55'];
+   --vp-up / --vp-dn above. */
+const VP_UP = '#35c48a', VP_DN = '#e2685c';
 const VP_W = 92;
 
 /* Draws the histogram against the chart's own price scale, so a bulge sits at the
    height of the line it produced. Bars grow left from the scale, the convention
-   everywhere this is shown. Silent no-op when there is no profile — the strip
+   everywhere this is shown, and each one is split into the volume that arrived on
+   up days and on down days. Silent no-op when there is no profile — the strip
    below says why in words. */
 function drawProfile(pr){
   const cv = $('vp'), H = $('wrap').clientHeight, dpr = window.devicePixelRatio || 1;
@@ -740,10 +754,13 @@ function drawProfile(pr){
     const y0 = candles.priceToCoordinate(pr.lo + (i + 1) * pr.w);
     const y1 = candles.priceToCoordinate(pr.lo + i * pr.w);
     if (y0 == null || y1 == null) continue;      // bin is off-screen vertically
-    const share = pr.hist[i] / max;
-    const bw = Math.max(1, share * (VP_W - 8));
-    g.fillStyle = VP_RAMP[Math.min(3, Math.floor(share * 4))];
-    g.fillRect(VP_W - bw, y0, bw, Math.max(1, y1 - y0));
+    const h  = Math.max(1, y1 - y0);
+    const bw = Math.max(1, (pr.hist[i] / max) * (VP_W - 8));
+    /* Up volume anchored at the scale, down volume continuing away from it, so the
+       eye reads one bar per level and the boundary between them is the balance. */
+    const upw = bw * (pr.histUp[i] / pr.hist[i]);
+    g.fillStyle = VP_UP; g.fillRect(VP_W - upw, y0, upw, h);
+    g.fillStyle = VP_DN; g.fillRect(VP_W - bw, y0, bw - upw, h);
   }
 }
 

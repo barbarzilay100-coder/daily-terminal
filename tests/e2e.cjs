@@ -188,6 +188,26 @@ server.listen(PORT, () => {
   ck('JS matches Python golden R2=126.08', Math.abs(g.res[1]-126.08)<0.02, g.res[1]);
   ck('JS matches Python golden S1=104.71 on full window', Math.abs(g.sup-104.71)<0.02, g.sup);
 
+  /* The up/down split feeds only the drawing. If it ever leaked into hist the three
+     golden assertions above would move, so those are the real guard — these check
+     the split itself is a split and not a relabelling of the whole bar. */
+  const SP = await pg.evaluate(()=>{
+    const bars = window.__BARS;
+    const r = window.__profileLevels(bars, bars[bars.length-1].c);
+    let sumAll = 0, sumUp = 0, over = 0;
+    for (let i = 0; i < r.hist.length; i++){
+      sumAll += r.hist[i]; sumUp += r.histUp[i];
+      if (r.histUp[i] > r.hist[i] + 1e-6) over++;
+    }
+    return { sumAll, sumUp, over, total:r.total, bins:r.hist.length, upBins:r.histUp.length };
+  });
+  console.log('profile split:', JSON.stringify({...SP, share:+(SP.sumUp/SP.sumAll).toFixed(3)}));
+  ck('the up half never exceeds the whole at any level', SP.over===0, SP.over);
+  ck('both sides carry volume, so the bar really is split',
+     SP.sumUp>0 && SP.sumUp<SP.sumAll, [SP.sumUp, SP.sumAll]);
+  ck('splitting did not change the total the levels are found from',
+     Math.abs(SP.sumAll-SP.total)/SP.total<1e-9 && SP.upBins===SP.bins, [SP.sumAll, SP.total]);
+
   // ═══ a profile needs volume; without it there are no levels, not invented ones ═══
   const NV = await pg.evaluate(()=>{
     const base = window.__BARS.slice(-252);
@@ -427,23 +447,28 @@ server.listen(PORT, () => {
       lvl: window.__LEVEL_COLOR,
       lineColours: window.__lines.map(l => l.options().color),
       ribbon: window.__MAS.map(m => m.color),
-      ramp: ['--vp-10','--vp-40','--vp-70','--vp-100'].map(css),
+      profile: [css('--vp-up'), css('--vp-dn')],
       declared: css('--level'),
       candleUp: css('--up'), candleDown: css('--down'),
     };
   });
   console.log('\ncolours:', JSON.stringify(col));
-  ck('level colour is the profile gold and matches the stylesheet',
-     col.lvl==='#e3bc55' && col.declared==='#e3bc55', [col.lvl, col.declared]);
-  ck('every drawn level line carries that same gold',
+  ck('level colour is blue #2962ff and matches the stylesheet',
+     col.lvl==='#2962ff' && col.declared==='#2962ff', [col.lvl, col.declared]);
+  /* Support and resistance are one flat blue, on purpose: a level is a level, and
+     colouring them apart would imply a difference the maths does not make. */
+  ck('every drawn level line carries that same blue, support and resistance alike',
      col.lineColours.length>=2 && col.lineColours.every(c=>c===col.lvl), col.lineColours);
-  /* The point of the ramp is that gold means volume. If a moving average or a candle
-     were also gold the encoding would be a lie, so no other series may hold it. */
-  ck('nothing else on the chart is that gold',
-     !col.ribbon.includes(col.lvl) && col.candleUp!==col.lvl && col.candleDown!==col.lvl,
-     [col.ribbon, col.candleUp, col.candleDown]);
-  ck('the gold is the top of the volume ramp, not a colour of its own',
-     col.ramp[3]===col.lvl && new Set(col.ramp).size===4, col.ramp);
+  ck('nothing else on the chart is that blue',
+     !col.ribbon.includes(col.lvl) && !col.profile.includes(col.lvl)
+       && col.candleUp!==col.lvl && col.candleDown!==col.lvl,
+     [col.ribbon, col.profile, col.candleUp, col.candleDown]);
+  /* The profile's pair has to be brighter than the ribbon's, or the two greens and
+     the two reds are the same colour and the profile stops being the loud thing. */
+  ck('the profile green/red are their own pair, not the ribbon\'s',
+     col.profile[0]!==col.candleUp && col.profile[1]!==col.candleDown
+       && !col.ribbon.includes(col.profile[0]) && !col.ribbon.includes(col.profile[1]),
+     [col.profile, col.ribbon]);
   ck('candles keep red/green', col.candleUp==='#4e9e7e' && col.candleDown==='#c06a5c',
      [col.candleUp, col.candleDown]);
 
