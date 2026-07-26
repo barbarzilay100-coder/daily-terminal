@@ -125,7 +125,10 @@
   }
   .ln:last-child{border-bottom:0}
   .ln .n{display:flex; align-items:baseline; gap:7px; min-width:0; white-space:nowrap}
-  .ln .v{display:flex; align-items:center; gap:8px; flex:none;
+  /* Shrinkable, and it wraps: at `flex:none` a long value such as the source line
+     ran straight past the edge of the narrow rail and was clipped mid-word. */
+  .ln .v{display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+         gap:2px 8px; flex:0 1 auto; min-width:0;
          color:var(--dim); font-size:12px}
 
   /* A category's share of its own conditions, as a track rather than a fraction
