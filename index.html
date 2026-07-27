@@ -677,7 +677,11 @@ function paintQuote(sym){
   $('qpx').textContent  = fmt(last.c);
   if (prev){
     const d = last.c - prev.c, p = d / prev.c * 100;
-    el.textContent = `${d >= 0 ? '+' : ''}${fmt(d)} (${d >= 0 ? '+' : ''}${p.toFixed(2)}%)`;
+    /* fmt() gives sub-1 values four significant digits, which is right for a
+       penny-stock PRICE and wrong for a small CHANGE on a normal one: TEVA up a
+       quarter printed "+0.2500". A change on a >=$1 stock is money, two decimals. */
+    const dstr = last.c >= 1 ? Math.abs(d).toFixed(2) : fmt(Math.abs(d));
+    el.textContent = `${d >= 0 ? '+' : '-'}${dstr} (${d >= 0 ? '+' : ''}${p.toFixed(2)}%)`;
     el.className = 'q-ch ' + (d >= 0 ? 'pos' : 'neg');
   } else {
     el.textContent = ''; el.className = 'q-ch';

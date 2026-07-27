@@ -1,4 +1,4 @@
-# Runs the end-to-end suite on every push, so "163 assertions" is a fact anyone can
+# Runs the end-to-end suite on every push, so "164 assertions" is a fact anyone can
 # check rather than a claim in the README.
 #
 # This can run unattended because the suite is hermetic: it serves index.html from a

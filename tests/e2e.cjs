@@ -184,6 +184,21 @@ server.listen(PORT, () => {
   ck('a quote whose previous close disagrees with our history is refused',
      LQ3.liveBar===null && LQ3.qpx==='114.99' && LQ3.qlive==='', LQ3);
 
+  /* a small change on a normal-priced stock is money, not a measurement: TEVA up a
+     quarter must print "+0.25", not fmt()'s four-significant-digit "+0.2500" */
+  const LQ4 = await pg.evaluate(async ()=>{
+    window.__applyQuote({ td:'2026-07-27', o:115, h:115.5, l:114.8, p:115.24, cl:114.99,
+                          v:1000, ms:'open', u:'Jul 27, 2026, 10:52 AM EDT' });
+    await window.__stable();
+    const qch = document.getElementById('qch').textContent;
+    window.__applyQuote(null);            // leave no live bar for the sections below
+    await window.__stable();
+    return { qch, cleared: window.__LIVE_BAR===null,
+             qpx: document.getElementById('qpx').textContent };
+  });
+  ck('a sub-dollar change prints as money, not as four significant digits',
+     LQ4.qch==='+0.25 (+0.22%)' && LQ4.cleared && LQ4.qpx==='114.99', LQ4);
+
   /* Zoom all the way out for the 5Y golden checks, and wait for the FULL window to
      be the one on screen. Waiting merely for "the text changed" catches an
      intermediate range mid-animation and measures the golden levels on the wrong
