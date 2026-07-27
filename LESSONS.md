@@ -66,3 +66,7 @@ mid-word at "(1 d" — the value was `flex:none` and overflowed the narrowed rai
 the suite nor ordinary browsing had surfaced it. When a change alters layout widths,
 produce the images before declaring the change finished; they force a look at states that
 casual clicking skips.
+2026-07-27 addendum: the images also rot when the *rules* change, not just the layout — the
+committed screenshots still showed the pre-27-Jul checklist (RSI 50–70, no up-bar test) and the
+old levels a full session after the maths moved. A scoring or level change invalidates the
+screenshots the same way it invalidates METHODOLOGY.md; regenerate them in the same session.
