@@ -40,7 +40,9 @@ and no API key.
 index.html               the entire app — markup, styles, logic
 docs/
   METHODOLOGY.md         how the levels and the score are defined
-  screenshot*.png        README images, regenerated at 2x from live data
+  screenshot*.png        README images, regenerated at 2x from the harness build (fixtures +
+                         frozen clock), so they always show the state the README's worked
+                         example describes, regardless of when they are captured
 tests/
   e2e.cjs                the suite: boots index.html against fixtures
   harness.js             offline build + the window.__* test hooks
