@@ -6,7 +6,7 @@
 ## Current Status
 
 **Active phase:** Phase 4 — portfolio framing
-**Active task:** the worked example — a README section that reads one screen end to end
+**Active task:** none open — next candidate: decide whether Phase 4 needs anything beyond the worked example, or close it
 **Last updated:** 2026-07-27
 
 The app is feature-complete and live on GitHub Pages. The English migration and the
@@ -29,7 +29,8 @@ entirely, and on multi-year windows zooming out barely moves the levels.
 ## Tasks — Active Phase
 
 - [x] Bring the README's level description current with the 27 Jul maths — Done when: age weighting, the decay consequence and volatility-scaled separation appear in the levels paragraph with their reasons, and no claim contradicts `index.html`
-- [ ] Worked example: read one screen — Done when: a short README section walks the ORCL screenshot from chart to verdict, arguing why each element earns its place rather than listing it
+- [x] Worked example: read one screen — Done when: a short README section walks the ORCL screenshot from chart to verdict, arguing why each element earns its place rather than listing it
+- [x] Regenerate both README screenshots (found stale mid-task) — Done when: the images show the post-27-Jul rules and levels at the original 2x dimensions
 
 ## Deadlines
 
@@ -46,6 +47,7 @@ None.
 
 ## Session Log
 
+2026-07-27 | Worked example added to the README, and both screenshots regenerated after they turned out to show the pre-27-Jul rules | Done | Verified by: every number in the new section read off the freshly captured panels (score 2/7, R1 124.35 +8.1%, R2 131.12 +14.0%, percentiles 30/26, verdict 5/8), images match the original 2x dimensions, suite 160/160 | Next: decide whether Phase 4 needs more or closes
 2026-07-27 | Backlog sweep + Phase 4 opened: deleted dead flagsAt(), added the HVN-as-magnet limit to METHODOLOGY.md, synced the README's level maths (age decay, volatility-scaled separation) | Done | Verified by: suite 160/160 after the code deletion, every new README claim traced to a constant or the method note in index.html, assertion count unchanged so the three quote sites stay correct | Next: the worked-example README section
 2026-07-27 | Sync METHODOLOGY.md with the new scoring and level rules | Done | Verified by: the four contradicting claims corrected plus a fifth found on the full re-read (the exit rule is ungated, but the arrow now needs an open entry), and every bolded threshold in the document mapped back to a constant in index.html | Next: the two cosmetic P4s remain
 2026-07-27 | Six strategy-logic corrections: RSI floor 40, 4% anti-chase cap, volatility-scaled separation, 126-bar time decay, gated exit markers, HVN caveat | Done | Verified by: suite 160/160; ORCL scores 2 of 7 and BTCUSDT 4 of 8; zoom and pan exercised across five windows on both symbols with the profile canvas re-inking each time; AAPL checked against the live API since it is not in the fixtures | Next: sync METHODOLOGY.md

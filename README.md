@@ -89,6 +89,36 @@ pipeline stops being the primary source instead of quietly serving last quarter'
 reads differently from a weak one that happens to look good on the chart, and neither layer
 says that alone.
 
+## Reading one screen
+
+The screenshots above are a single real read — ORCL on 24 July 2026 — and worth walking
+through, because every claim on the screen can be checked against the panel next to it.
+
+**The chart says why the score is low.** ORCL closed at 114.99, down 4.2%, under the whole
+moving-average ribbon, and the last trigger was a 9/21 *down*-cross 27 trading days earlier.
+The checklist agrees line by line: 2 of 7, with the regime gate still passing — SMA 50 has not
+yet crossed under SMA 100 — and nearly everything else failing. The category bars show the
+shape of the failure at a glance: momentum 0 of 3, trigger 0 of 1.
+
+**The levels say where it is.** The visible window built its histogram from 140 bars and found
+seven clusters, and price is under every one of them. So resistance reads 124.35 (+8.1%) and
+131.12 (+14.0%), support does not exist, and the panel says exactly that instead of inventing a
+floor. That absence is also why reward-to-risk is n/a rather than a free point: the room to
+resistance is real and scores, but there is no level below to measure the risk half against.
+The most recent break agrees with the direction — 23 July closed below 124.35.
+
+**The percentile blocks the obvious shortcut.** 2 of 7 looks bad in the absolute; the
+percentile says it really is bad *for ORCL*: 30th over one year, 26th over two, against a
+median of 38%. When the two windows agree, the regime has not changed — this is an ordinary
+weak day, not an unusual one.
+
+**The fundamental panel is why the read is interesting at all.** 5 of 8 Solid, PEG 0.65,
+implied value 128% above price, and the two independent price sources agreeing to 0.00%. The
+joining line compresses it: good business, poor timing. Neither layer says that alone — the
+chart alone reads "avoid", the scorecard alone reads "cheap quality" — and the point of the
+terminal is that the sentence is produced by stated rules, on one screen, with the method one
+click away.
+
 ## Skills demonstrated
 
 | Feature | Skill it proves |
