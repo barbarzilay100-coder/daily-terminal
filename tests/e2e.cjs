@@ -133,7 +133,7 @@ server.listen(PORT, () => {
      fixture on purpose, so every other assertion keeps running with no live bar. */
   const LQ = await pg.evaluate(async ()=>{
     const before = { tech: JSON.stringify(window.__TECH), n: window.__BARS.length };
-    window.__applyQuote({ td:'2026-07-27', o:118, h:121.99, l:116.8, p:120.46,
+    window.__applyQuote({ td:'2026-07-27', o:118, h:121.99, l:116.8, p:120.46, cl:114.99,
                           v:12445350, ms:'open', u:'Jul 27, 2026, 10:52 AM EDT' });
     await window.__stable();
     return { before,
@@ -170,6 +170,19 @@ server.listen(PORT, () => {
   });
   ck('a quote for a bar the history already has is a no-op',
      LQ2.liveBar===null && LQ2.qpx==='114.99' && LQ2.qlive==='', LQ2);
+
+  /* the quote names its own previous close; when it does not match the last bar we
+     hold, the history is lagging and the change % would be measured against the
+     wrong close — the live bar must be refused, not displayed wrong */
+  const LQ3 = await pg.evaluate(async ()=>{
+    window.__applyQuote({ td:'2026-07-28', o:120, h:121, l:119, p:120.5, cl:119.80,
+                          v:1000, ms:'open', u:'Jul 28, 2026, 10:00 AM EDT' });
+    await window.__stable();
+    return { liveBar: window.__LIVE_BAR, qpx: document.getElementById('qpx').textContent,
+             qlive: document.getElementById('qlive').textContent };
+  });
+  ck('a quote whose previous close disagrees with our history is refused',
+     LQ3.liveBar===null && LQ3.qpx==='114.99' && LQ3.qlive==='', LQ3);
 
   /* Zoom all the way out for the 5Y golden checks, and wait for the FULL window to
      be the one on screen. Waiting merely for "the text changed" catches an

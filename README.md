@@ -132,7 +132,7 @@ click away.
 | Bad-but-measurable values fail explicitly instead of dropping out of the denominator | Knowing that a lenient `n/a` flatters a score, and that a negative PEG satisfies `< 2` |
 | Sector applicability recovered from SEC SIC codes when the primary source lacks it | Working with primary regulatory sources |
 | GARP scorecard shared with the companion project, same thresholds | Financial statement analysis |
-| 167-assertion end-to-end suite over recorded API fixtures, on a frozen clock in a pinned timezone | Testing and verification discipline, including the test that decays on its own |
+| 168-assertion end-to-end suite over recorded API fixtures, on a frozen clock in a pinned timezone | Testing and verification discipline, including the test that decays on its own |
 
 ## How it works
 
@@ -175,7 +175,7 @@ npx playwright install chromium
 node tests/e2e.cjs
 ```
 
-167 assertions against recorded API responses, so the suite needs no network and does not change
+168 assertions against recorded API responses, so the suite needs no network and does not change
 as markets move. The clock is frozen to the recording date as well, because the staleness guard
 reads `Date.now()`: with a live clock the fixtures rot, and the suite would start failing about a
 month after recording with the source untouched. A test that decays on its own is worse than no

@@ -91,7 +91,18 @@ bar series the analysis reads: the score, the levels, the reference close and th
 keep reading closed bars only, and the levels line says so while the forming bar is on screen. A
 bar that can still change must not be graded against bars that cannot, and an intraday print is
 exactly such a bar. When the quote fails or the market is closed, the page simply shows the last
-close, which is what it always did.
+close, which is what it always did. Two guards keep the display honest: a quote whose own
+previous close does not match the last bar held is refused outright, because the history is
+then behind by more than the forming session and the change would be measured against the wrong
+close; and a transient network failure keeps the last print and retries, instead of flashing
+back to a close the market has moved away from.
+
+**Known exception: crypto counts its forming day.** Binance serves daily klines with the
+current UTC day included, and this terminal feeds them to the analysis as delivered — so for
+crypto pairs the forming bar *is* inside the score and the levels, unlike stocks. The bar
+closes at 00:00 UTC, so the discrepancy is largest early in the UTC day and zero at the close.
+Splitting it out the way the stock path does is planned; until then this asymmetry is stated
+here rather than hidden.
 
 ## Triggers, and why each indicator has exactly one job
 

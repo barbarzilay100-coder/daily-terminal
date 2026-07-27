@@ -753,8 +753,14 @@ function applyQuote(q){
   LIVE_BAR = null;
   /* strictly newer than the last closed bar: the same day means the daily history
      already has it, and drawing it again would double the candle */
+  const lastC = BARS.length ? BARS[BARS.length-1].c : NaN;
   if (q && q.td && BARS.length && q.td > BARS[BARS.length-1].t
-      && [q.o, q.h, q.l, q.p].every(v => isFinite(+v)))
+      && [q.o, q.h, q.l, q.p].every(v => isFinite(+v))
+      /* the quote names its own previous close; if that is not the bar we hold,
+         the history is behind by more than the forming session, and the change %
+         would be measured against the wrong close with a day silently missing
+         from the chart — show the plain close instead */
+      && (q.cl == null || Math.abs(+q.cl - lastC) / lastC < 0.001))
     LIVE_BAR = { t:q.td, o:+q.o, h:+q.h, l:+q.l, c:+q.p, v:+q.v || 0,
                  u:q.u || '', open:q.ms === 'open' };
   paintLive();
@@ -779,12 +785,15 @@ function paintLive(){
 
 function startLive(sym, ticket){
   const tick = async () => {
-    let q = null;
-    try { q = await fetchQuote(sym); } catch (e){ /* offline: behave as before */ }
+    let q = null, failed = false;
+    try { q = await fetchQuote(sym); } catch (e){ failed = true; }
     if (ticket !== LOAD_ID) return;              // superseded mid-flight
-    applyQuote(q);
+    /* an answered "no" (unknown ticker, no data) honestly clears the live bar;
+       a thrown fetch is a transient network error — keep the last print and retry,
+       rather than flashing back to a close the market has moved away from */
+    if (!failed) applyQuote(q);
     /* keep polling only while the exchange is open; a closed market cannot move */
-    if (q && q.ms === 'open') liveTimer = setTimeout(tick, 60000);
+    if ((q && q.ms === 'open') || (failed && LIVE_BAR)) liveTimer = setTimeout(tick, 60000);
   };
   tick();
 }
