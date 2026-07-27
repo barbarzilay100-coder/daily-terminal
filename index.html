@@ -481,14 +481,6 @@ function trendState(I, i, close){
   return { key:'flat', label:'No clear trend', why:'the averages are not lined up' };
 }
 
-/* the two confirmation flags, read on the trigger bar itself */
-function flagsAt(I, i, bars){
-  return {
-    rsi: (I.rsi[i] != null && I.rsiMa[i] != null) ? I.rsi[i] > I.rsiMa[i] : null,
-    vol: (I.volAvg[i] != null) ? bars[i].v > I.volAvg[i] : null,
-  };
-}
-
 /* most recent close-through of any currently displayed level, within [from,to] */
 function lastLevelBreak(bars, levels, from, to){
   let best = null;

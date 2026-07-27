@@ -33,9 +33,16 @@ pane. Drawn with [Lightweight Charts](https://github.com/tradingview/lightweight
 TradingView's open-source library, over price data the page computes indicators from itself.
 
 **Support and resistance from volume, not eyeballing.** Each day's volume is spread uniformly
-across that day's high-low range, building a volume-by-price histogram. Levels are local peaks
-of that histogram: the two nearest above the price are resistance, the nearest below is support.
-They are drawn on the chart in blue and listed with their distance from the price.
+across that day's high-low range, building a volume-by-price histogram. The contribution is
+weighted by age, halving about every half trading year — holders turn over, and the price being
+defended now is the one that moves price now — so a band nothing has traded near for a year
+decays out of the profile on its own instead of standing until someone deletes it. Levels are
+local peaks of that histogram that clear the mean bin, and peaks closer together than the
+asset's own median daily range × 1.5 (held between 1% and 5%) count as one level, because a
+fixed percentage asks a quiet utility and a fast crypto pair to call the same distance
+"separate", which is two different claims about the market. The two nearest above the price are
+resistance, the nearest below is support. They are drawn on the chart in blue and listed with
+their distance from the price.
 
 **The histogram is shown, not just used.** It sits against the price axis, so a bulge is at the
 same height as the line it produced and a level can be read as the shape it came from rather than
@@ -86,7 +93,7 @@ says that alone.
 
 | Feature | Skill it proves |
 |---|---|
-| Volume-profile support/resistance computed in-browser from OHLCV | Quantitative method, not chart-reading by eye |
+| Volume-profile support/resistance computed in-browser from OHLCV, age-weighted with volatility-scaled level separation | Quantitative method, not chart-reading by eye |
 | Rolling historical scoring with an explicit no-look-ahead guarantee, tested across 25 sampled bars | Understanding of backtest bias, the error that invalidates most retail analysis |
 | Regime gate / trigger / confirmation separated by design, with the redundant condition removed | Analytical thinking; knowing when two indicators say the same thing |
 | Percentile context over two windows instead of a single hardcoded lookback | Parameter sensitivity shown rather than hidden |

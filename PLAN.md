@@ -5,8 +5,8 @@
 
 ## Current Status
 
-**Active phase:** Phase 3 — visual identity and presentation
-**Active task:** none open — the queue is down to two P4s, both cosmetic
+**Active phase:** Phase 4 — portfolio framing
+**Active task:** the worked example — a README section that reads one screen end to end
 **Last updated:** 2026-07-27
 
 The app is feature-complete and live on GitHub Pages. The English migration and the
@@ -23,20 +23,13 @@ entirely, and on multi-year windows zooming out barely moves the levels.
 
 - [x] Phase 1 — The chart, the indicator set, and the volume-profile levels
 - [x] Phase 2 — The graded checklist, the percentile history, and the GARP layer
-- [~] Phase 3 — Visual identity and presentation
-- [ ] Phase 4 — Portfolio framing: make the README argue the analytical case, not just describe features
+- [x] Phase 3 — Visual identity and presentation (two cosmetic P4s remain in REVIEW.md, neither blocks the phase)
+- [~] Phase 4 — Portfolio framing: make the README argue the analytical case, not just describe features
 
 ## Tasks — Active Phase
 
-- [x] Move the whole UI from Hebrew to English — Done when: zero Hebrew characters in `index.html`, `lang="en"`, suite green
-- [x] Give the terminal its own visual identity — Done when: no GitHub default palette, a display face other than the system stack, suite green
-- [x] Draw the volume-profile histogram the levels are derived from — Done when: it renders docked to the price scale, clears when there is no profile, and the golden run is unchanged
-- [x] Split the profile into up-day and down-day volume — Done when: `histUp` never exceeds `hist`, both sides carry volume, `hist` untouched
-- [x] Regenerate the README screenshots at 2x — Done when: both match the original dimensions and show the current design
-- [x] Say in the README that the profile is now drawn — Done when: the "support and resistance" paragraph mentions the histogram, and the alt text matches the new image
-- [x] Stop the room / reward-to-risk double count, and make the volume condition direction-aware — Done when: R:R reads n/a with nothing overhead instead of taking a second free point, the volume point needs an up bar, suite green
-- [x] Six strategy-logic corrections — Done when: RSI floor at 40, a 4% anti-chase cap on freshness, volatility-scaled level separation, 126-bar time decay, exits drawn only for gated entries, and the HVN-as-magnet limit stated; today and history graded by identical rules; suite green
-- [x] Sync `docs/METHODOLOGY.md` with the new rules — Done when: every threshold in the document maps to a constant in `index.html`
+- [x] Bring the README's level description current with the 27 Jul maths — Done when: age weighting, the decay consequence and volatility-scaled separation appear in the levels paragraph with their reasons, and no claim contradicts `index.html`
+- [ ] Worked example: read one screen — Done when: a short README section walks the ORCL screenshot from chart to verdict, arguing why each element earns its place rather than listing it
 
 ## Deadlines
 
@@ -44,9 +37,8 @@ None set.
 
 ## Backlog
 
-- The fundamentals row leaves whitespace under the narrow Verdict rail. Honest whitespace now rather than a stretched empty card, but a third item could fill it.
-- `flagsAt()` in `index.html` is dead code with no callers, and it still holds the pre-27-Jul volume rule without the up-bar test. Either delete it or route the confirmation flags through it.
-- The HVN-as-magnet limitation is stated in the app's method note but not in `docs/METHODOLOGY.md`. Not a contradiction, just an asymmetry between the two.
+Empty. Swept 2026-07-27 at the Phase 4 opening: `flagsAt()` deleted, the HVN limitation added
+to METHODOLOGY.md, and the Verdict-rail whitespace line removed as a duplicate of REVIEW.md's P4.
 
 ## Blockers & Open Questions
 
@@ -54,6 +46,7 @@ None.
 
 ## Session Log
 
+2026-07-27 | Backlog sweep + Phase 4 opened: deleted dead flagsAt(), added the HVN-as-magnet limit to METHODOLOGY.md, synced the README's level maths (age decay, volatility-scaled separation) | Done | Verified by: suite 160/160 after the code deletion, every new README claim traced to a constant or the method note in index.html, assertion count unchanged so the three quote sites stay correct | Next: the worked-example README section
 2026-07-27 | Sync METHODOLOGY.md with the new scoring and level rules | Done | Verified by: the four contradicting claims corrected plus a fifth found on the full re-read (the exit rule is ungated, but the arrow now needs an open entry), and every bolded threshold in the document mapped back to a constant in index.html | Next: the two cosmetic P4s remain
 2026-07-27 | Six strategy-logic corrections: RSI floor 40, 4% anti-chase cap, volatility-scaled separation, 126-bar time decay, gated exit markers, HVN caveat | Done | Verified by: suite 160/160; ORCL scores 2 of 7 and BTCUSDT 4 of 8; zoom and pan exercised across five windows on both symbols with the profile canvas re-inking each time; AAPL checked against the live API since it is not in the fixtures | Next: sync METHODOLOGY.md
 2026-07-27 | Stop the room/R:R double count, make the volume condition direction-aware, add the footer disclaimer | Done | Verified by: suite green after each change, ORCL's denominator really moves to 7, and the new volume assertion exercises a real down bar and up bar from the fixtures rather than a synthetic one | Next: the six strategy-logic corrections

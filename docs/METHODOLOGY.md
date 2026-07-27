@@ -60,6 +60,12 @@ weights are small enough that zooming out further barely moves the levels, so a 
 is in practice a recent-history profile with a long tail. A level that was decisive in 2022 and
 has not been revisited since will not be drawn today.
 
+**A peak is past agreement, not a wall.** A high-volume node marks a price where a lot of
+business was done. Price often stalls there, which is why these levels are drawn and read as
+barriers — but the same peak can equally attract price toward it, and the thin stretches between
+peaks are where price tends to travel fastest. Reading the levels as barriers is one defensible
+interpretation, not the only one, and the app's method note says the same.
+
 **Deliberately empty states.** If no accumulation band sits below the price, meaning the asset
 has fallen through all of them, there is no support level and the panel says exactly that. The same
 applies above. A fabricated level is worse than an absent one.
