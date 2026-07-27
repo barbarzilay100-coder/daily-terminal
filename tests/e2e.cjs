@@ -877,24 +877,6 @@ server.listen(PORT, () => {
   ck('the bank is therefore scored out of 5: 4 sector-applicable criteria plus the failed PEG',
      /3 of 5/.test(FB), FB.slice(0,80));
 
-  // ---- crypto: no fundamentals, and the chart path still works ----
-  await loadSym('BTCUSDT');
-  const c2 = await pg.evaluate(()=>({
-    veil:document.getElementById('veil').classList.contains('on'),
-    qsym:document.getElementById('qsym').textContent, qpx:document.getElementById('qpx').textContent,
-    bars:window.__BARS.length, win:document.getElementById('lv-win').textContent,
-    fu:document.getElementById('fu').textContent.replace(/\s+/g,' ').trim(),
-    cells:[...document.querySelectorAll('#lv .it')].map(c=>({cls:c.querySelector('.k').textContent.trim(),txt:c.textContent.replace(/\s+/g,' ').trim()})),
-  }));
-  console.log('\n=== BTCUSDT ==='); console.log(JSON.stringify({...c2, fu:c2.fu.slice(0,80)},null,2));
-  ck('crypto says it has no fundamentals instead of inventing any',
-     /files no financial statements/.test(c2.fu) && !/GARP/.test(c2.fu), c2.fu.slice(0,90));
-  ck('crypto path loads', c2.veil===false && c2.bars===1000, [c2.veil,c2.bars]);
-  ck('crypto quote shown', c2.qsym==='BTCUSDT' && parseFloat(c2.qpx.replace(/,/g,''))>1000, [c2.qsym,c2.qpx]);
-  ck('crypto gets real levels both sides',
-     c2.cells.filter(c=>/^(Resistance [12]|Support)$/.test(c.cls)).length===3, c2.cells.map(c=>c.cls));
-  await pg.screenshot({ path: path.join(__dirname, '.tmp', 'shot-btc.png') });
-
   // ═══ nothing on screen may outlive the symbol it describes ═══
   await loadSym('ORCL');
   const before2 = await pg.evaluate(()=>({
@@ -924,13 +906,6 @@ server.listen(PORT, () => {
      bad.bars===0 && bad.lines===0 && bad.marks===0 && bad.brk===0, bad);
   ck("TECH is reset, so the next company cannot inherit this one's technical score",
      bad.tech===null, bad.tech);
-
-  await pg.fill('#sym','FAKEUSDT'); await pg.click('#go');
-  await pg.waitForFunction(()=>document.getElementById('veil').classList.contains('on')
-                              && /Binance/.test(document.getElementById('veil-w').textContent), null, {timeout:20000});
-  const bad2 = await pg.evaluate(()=>({on:document.getElementById('veil').classList.contains('on'),
-                                       w:document.getElementById('veil-w').textContent}));
-  ck('unknown crypto pair shows explicit failure', bad2.on && /Binance/.test(bad2.w), bad2);
 
   // ═══ too little history to grade: say so, and do not keep the last symbol's score ═══
   await loadSym('ORCL');

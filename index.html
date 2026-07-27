@@ -220,8 +220,6 @@
     <button data-s="NVDA">NVDA</button>
     <button data-s="MSFT">MSFT</button>
     <button data-s="TEVA">TEVA</button>
-    <button data-s="BTCUSDT">BTC</button>
-    <button data-s="ETHUSDT">ETH</button>
   </div>
   <div class="quote">
     <span class="q-sym" id="qsym">—</span>
@@ -364,8 +362,8 @@ function profileLevels(bars, price, opt){
   for (const b of bars){ if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; }
   if (!(hi > lo)) return { nodes:[], res:[], sup:null, total:0 };
 
-  /* A flat 1.5% gap asked a utility and BTC to call the same distance "a separate
-     level", which is two different claims about the market. Scaling it by the
+  /* A flat 1.5% gap asked a quiet utility and a fast mover to call the same distance
+     "a separate level", which is two different claims about the market. Scaling it by the
      asset's own median daily range makes the separation mean one thing: levels
      closer than roughly a day and a half of normal movement are the same level.
      The median resists the single gap-down day that a mean would follow, and the
@@ -501,8 +499,6 @@ function lastLevelBreak(bars, levels, from, to){
 
 /* ───────────────────────────── data ───────────────────────────── */
 
-const isCrypto = s => /(USDT|USDC|BUSD|FDUSD)$/.test(s);
-
 async function fetchStock(sym){
   const u = `https://api.stockanalysis.com/api/symbol/s/${encodeURIComponent(sym.toLowerCase())}/history?range=5Y&period=Daily`;
   const r = await fetch(u);
@@ -514,18 +510,6 @@ async function fetchStock(sym){
              .filter(b => isFinite(b.c))
              /* equal timestamps must compare 0, or the comparator contradicts itself */
              .sort((a,b) => a.t < b.t ? -1 : a.t > b.t ? 1 : 0);
-}
-
-async function fetchCrypto(sym){
-  const u = `https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(sym)}&interval=1d&limit=1000`;
-  const r = await fetch(u);
-  if (!r.ok) throw new Error(`binance HTTP ${r.status}`);
-  const k = await r.json();
-  if (!Array.isArray(k) || !k.length) throw new Error('no klines returned');
-  return k.map(a => ({
-    t: new Date(a[0]).toISOString().slice(0,10),
-    o:+a[1], h:+a[2], l:+a[3], c:+a[4], v:+a[5]
-  })).filter(b => isFinite(b.c));   // same guard the stock path has; a bad row printed NaN
 }
 
 /* ──────────────────────────── chart ──────────────────────────── */
@@ -951,7 +935,7 @@ function renderLevels(){
     + 'still counts for roughly a quarter. '
     + 'A level is a local peak of that histogram that clears the average bin, and peaks too close to one '
     + 'already taken are dropped. That distance is not a fixed percentage: it is this asset\'s own median '
-    + 'daily range multiplied by 1.5 and held between 1% and 5%, so a quiet utility and a fast crypto pair '
+    + 'daily range multiplied by 1.5 and held between 1% and 5%, so a quiet utility and a fast mover '
     + 'are each measured against how they actually move. No volume in the window means no profile and no '
     + 'levels, rather than a guess. '
     + 'One limit worth stating: a peak is a price where a lot of business was done, which is past '
@@ -1244,8 +1228,7 @@ function renderAssessment(){
      anything else -> stockanalysis' timeseries API, one request per metric.
        It is an undocumented internal API, so it is used ONLY to extend reach
        beyond the covered universe. If it dies, free-text lookups lose their
-       fundamental panel and nothing else breaks.
-   Crypto has no fundamentals and says so. */
+       fundamental panel and nothing else breaks. */
 
 const UNIVERSE_URL = 'https://barbarzilay100-coder.github.io/equity-research-terminal/data.json';
 const TS_URL = (t, m) => `https://stockanalysis.com/api/timeseries/s/${encodeURIComponent(t.toLowerCase())}/${m}`;
@@ -1450,12 +1433,6 @@ async function renderFundamental(sym, ticket){
   const set = (sub, html, note) => { $('fu-sub').innerHTML = sub; $('fu').innerHTML = html; $('fu-note').textContent = note || ''; };
   const mine = () => ticket === undefined || ticket === LOAD_ID;
 
-  if (isCrypto(sym)){
-    set('', `<div class="cell st none"><div class="c-lbl">Fundamentals</div>
-      <div class="c-none">Nothing to read here. This instrument files no financial statements.</div></div>`, '');
-    return;
-  }
-
   set('Loading…', '', '');
   const cached = fundCache[sym];
   let F = (cached && Date.now() - cached.at < FUND_CACHE_MS) ? cached.F : null;
@@ -1606,7 +1583,7 @@ async function load(sym){
   resetView();
   veil(true, 'Loading ' + sym + '…', '');
   try {
-    const bars = isCrypto(sym) ? await fetchCrypto(sym) : await fetchStock(sym);
+    const bars = await fetchStock(sym);
     if (ticket !== LOAD_ID) return;                       // superseded mid-flight
     if (bars.length < 120) throw new Error(`only ${bars.length} bars, not enough history`);
     BARS = bars;
@@ -1619,16 +1596,13 @@ async function load(sym){
     renderAssessment();   // fixed windows: once per symbol, not per zoom
     renderLevels();       // view-dependent: re-runs on every range change
     renderFundamental(sym, ticket);   // async, paints when its sources answer
-    /* Binance klines already include the forming day, so crypto needs no quote */
-    if (!isCrypto(sym)) startLive(sym, ticket);
+    startLive(sym, ticket);
   } catch (e){
     if (ticket !== LOAD_ID) return;
     resetView();
     veil(true, 'Could not load ' + sym,
-      isCrypto(sym)
-        ? 'Pairs come from Binance. Check the symbol exists, for example BTCUSDT or ETHUSDT. (' + e.message + ')'
-        : 'Prices come from stockanalysis. Check the ticker exists, and that it has traded for more than '
-          + '120 days. (' + e.message + ')');
+      'Prices come from stockanalysis. Check the ticker exists, and that it has traded for more than '
+        + '120 days. (' + e.message + ')');
   }
 }
 

@@ -36,7 +36,7 @@ volume changed hands, which is what makes it likely to matter again.
    volume. Peaks are taken strongest-first, and any peak too close to one already accepted is
    dropped, so the output is distinct bands and not three adjacent bins. "Too close" is not a
    fixed percentage: it is the asset's own **median daily range × 1.5**, clamped to **1–5%**. A
-   flat threshold asked a utility and a crypto pair to call the same distance "a separate level",
+   flat threshold asked a quiet utility and a fast mover to call the same distance "a separate level",
    which is two different claims about the market; scaling it means one thing everywhere, that
    levels nearer than about a day and a half of normal movement are the same level. The median is
    used rather than the mean because a single gap day should not redefine the asset's normal
@@ -96,13 +96,6 @@ previous close does not match the last bar held is refused outright, because the
 then behind by more than the forming session and the change would be measured against the wrong
 close; and a transient network failure keeps the last print and retries, instead of flashing
 back to a close the market has moved away from.
-
-**Known exception: crypto counts its forming day.** Binance serves daily klines with the
-current UTC day included, and this terminal feeds them to the analysis as delivered — so for
-crypto pairs the forming bar *is* inside the score and the levels, unlike stocks. The bar
-closes at 00:00 UTC, so the discrepancy is largest early in the UTC day and zero at the close.
-Splitting it out the way the stock path does is planned; until then this asymmetry is stated
-here rather than hidden.
 
 ## Triggers, and why each indicator has exactly one job
 

@@ -31,6 +31,7 @@ entirely, and on multi-year windows zooming out barely moves the levels.
 - [x] Bring the README's level description current with the 27 Jul maths — Done when: age weighting, the decay consequence and volatility-scaled separation appear in the levels paragraph with their reasons, and no claim contradicts `index.html`
 - [x] Worked example: read one screen — Done when: a short README section walks the ORCL screenshot from chart to verdict, arguing why each element earns its place rather than listing it
 - [x] Regenerate both README screenshots (found stale mid-task) — Done when: the images show the post-27-Jul rules and levels at the original 2x dimensions
+- [x] Remove crypto support (Bar's call: not interesting for the portfolio) — Done when: no crypto path in code, tests, fixtures or docs; the BTC/ETH chips gone; suite green
 - [x] Live session display: live header price + forming candle, analysis untouched — Done when: the quote refreshes each minute while the market is open, the forming bar never enters BARS, the levels line says it is not counted, and the suite covers both the live path and the caught-up no-op
 
 ## Deadlines
@@ -39,12 +40,8 @@ None set.
 
 ## Backlog
 
-- Crypto asymmetry with the new live-bar rule: Binance klines include the forming day and it
-  goes straight into BARS, so for crypto the forming bar IS counted by the score and the levels,
-  unlike stocks. Existing behaviour, predates the live feature. Either split it out the same way
-  (moves the BTC test baselines) or state the asymmetry in METHODOLOGY.md.
-
-(Otherwise empty — swept 2026-07-27 at the Phase 4 opening: `flagsAt()` deleted, the HVN
+(Empty — the crypto asymmetry item was resolved by removing crypto support entirely,
+2026-07-27, at Bar's request. Previously swept 2026-07-27 at the Phase 4 opening: `flagsAt()` deleted, the HVN
 limitation added to METHODOLOGY.md, and the Verdict-rail whitespace line removed as a duplicate
 of REVIEW.md's P4.)
 
@@ -54,6 +51,7 @@ None.
 
 ## Session Log
 
+2026-07-27 | Crypto support removed end to end: fetch path, symbol detection, BTC/ETH chips, the no-fundamentals branch, the Binance stub, the BTC fixture and five assertions, plus every doc mention — the just-added METHODOLOGY asymmetry paragraph went with it | Done | Verified by: repo-wide sweep for crypto/binance/usdt returns nothing outside PLAN history, suite 163/163, count synced in all three sites | Next: Phase 4 close-or-continue decision stands
 2026-07-27 | Consistency review of the live feature: lagging-history guard (quote's own previous close must match our last bar), transient network errors keep the last print instead of flashing the stale close, and the crypto forming-day asymmetry stated in METHODOLOGY.md | Done | Verified by: suite 168/168 with the new refusal assertion, real-network run still live (120.50 +4.79% at 11:09 EDT) so the guard passes genuine quotes, count synced in all three sites | Next: the crypto split stays in the Backlog
 2026-07-27 | Live session display: keyless quote endpoint feeds a live header price and a translucent forming candle, refreshed per minute while the exchange is open; analysis stays on closed bars | Done | Verified by: suite 167/167 (7 new assertions: live path + caught-up no-op), and a real-network run during the open session showed ORCL live at 120.75 +5.00% with levels still measured against the 24 Jul close and the "not counted" note on screen; assertion count synced in all three quote sites | Next: the crypto forming-kline asymmetry sits in the Backlog
 2026-07-27 | Worked example added to the README, and both screenshots regenerated after they turned out to show the pre-27-Jul rules | Done | Verified by: every number in the new section read off the freshly captured panels (score 2/7, R1 124.35 +8.1%, R2 131.12 +14.0%, percentiles 30/26, verdict 5/8), images match the original 2x dimensions, suite 160/160 | Next: decide whether Phase 4 needs more or closes

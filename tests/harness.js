@@ -51,7 +51,6 @@ const STUB = `<script>
       const t = decodeURIComponent(u.match(/symbol\\/s\\/([^\\/]+)\\//)[1]).toUpperCase();
       return HISTORY[t] ? ok(HISTORY[t]) : miss(404);
     }
-    if (u.includes('binance'))                             return u.includes('BTCUSDT') ? ok('./data/btc-klines.json') : miss(400);
     if (u.includes('equity-research-terminal/data.json'))   return ok('./data/universe-trimmed.json');
     if ((m = u.match(/\\/api\\/timeseries\\/s\\/([^\\/]+)\\/([^\\/?]+)/))){
       const d = LIVE[decodeURIComponent(m[1]).toUpperCase()];

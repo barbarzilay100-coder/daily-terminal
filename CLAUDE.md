@@ -10,7 +10,7 @@
 
 ## What This Project Is
 
-A daily technical-research terminal for any US stock or major crypto pair. It draws the
+A daily technical-research terminal for any US stock. It draws the
 chart, derives support and resistance from where volume actually traded rather than from
 eyeballed lines, grades the current bar against a fixed seven-condition checklist, and
 shows the company's GARP scorecard beside it so the chart is never read in isolation.
