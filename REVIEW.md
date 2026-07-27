@@ -11,13 +11,16 @@ a portfolio piece that convinces a recruiter for junior finance roles in Israel.
 
 ## Queue (ordered by priority)
 
-- [ ] P4 — The chart can leave blank space on its left after the window is resized — **Investigated 26 Jul 2026; mechanism known, cheap fix ruled out.** Not a redesign regression (identical on the pre-redesign `main`) and it does **not** happen on a clean load: `load()` sets the last `INITIAL_BARS` (140) and that holds — verified at several viewport sizes, and under a chart that has no layout at the moment the range is set. It appears only when the viewport widens *after* load: Lightweight Charts preserves bar spacing rather than bar count, so the view creeps left until it runs past the oldest bar. Self-correcting the moment the user scrolls or zooms.
+Empty. The queue closed with Phase 4 on 27 Jul 2026.
 
-  **Do not "fix" this with `timeScale.fixLeftEdge`.** It was tried and reverted: it costs the newest bar (`fitContent` then reports 1254 bars ending 23 Jul instead of 1255 ending 24 Jul), which changes the close the levels are measured against — an analytical change in exchange for a cosmetic one. Two assertions caught it.
+## Closed without action (Phase 4 close, 27 Jul 2026)
 
-  — Done when: the view stops running past the first bar on resize **without** altering which bar is last in view, suite green. Worth doing only if it is ever seen on a first impression rather than after a deliberate resize.
-
-- [ ] P4 — Whitespace under the Verdict rail — The fundamentals row now has a narrow left rail that ends well above its neighbours. Better than the stretched empty card it replaced, but still unfinished-looking — Done when: either a third fact fills the rail or the row is rebalanced, without reintroducing dead space elsewhere
+- P4 — Blank space on the chart's left after a window resize. Mechanism known and recorded in
+  LESSONS.md (Lightweight Charts preserves bar spacing, not bar count; `fixLeftEdge` costs the
+  newest bar and was reverted). Never seen on a first impression — only after a deliberate
+  resize, and it self-corrects on any scroll or zoom. Accepted as a known cosmetic limit.
+- P4 — Whitespace under the Verdict rail. Honest whitespace, chosen over a stretched empty
+  card. Accepted as-is.
 
 ## Done
 

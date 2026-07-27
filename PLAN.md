@@ -5,8 +5,9 @@
 
 ## Current Status
 
-**Active phase:** Phase 4 — portfolio framing
-**Active task:** none open — next candidate: decide whether Phase 4 needs anything beyond the worked example, or close it
+**Active phase:** none — all four phases complete (Phase 4 closed 2026-07-27 at Bar's call)
+**Active task:** none — the project is in maintenance: changes happen on request, and the CI
+suite (164 assertions) guards every push
 **Last updated:** 2026-07-27
 
 The app is feature-complete and live on GitHub Pages. The English migration and the
@@ -24,7 +25,7 @@ entirely, and on multi-year windows zooming out barely moves the levels.
 - [x] Phase 1 — The chart, the indicator set, and the volume-profile levels
 - [x] Phase 2 — The graded checklist, the percentile history, and the GARP layer
 - [x] Phase 3 — Visual identity and presentation (two cosmetic P4s remain in REVIEW.md, neither blocks the phase)
-- [~] Phase 4 — Portfolio framing: make the README argue the analytical case, not just describe features
+- [x] Phase 4 — Portfolio framing: make the README argue the analytical case, not just describe features
 
 ## Tasks — Active Phase
 
@@ -51,6 +52,7 @@ None.
 
 ## Session Log
 
+2026-07-27 | Phase 4 closed at Bar's call — all four phases complete, project moves to maintenance | Done | Verified by: the phase's four tasks all checked with evidence in this log, Backlog empty, and the two cosmetic P4s in REVIEW.md closed without action with their reasons recorded | Next: nothing scheduled; changes on request
 2026-07-27 | Recruiter's-eye verification of the deployed page + one formatting fix: ORCL/AAPL/TEVA driven on the public URL with zero console errors, live headers and "not counted" notes correct on all three; TEVA exposed the change printing as "+0.2500", fixed to money formatting with a regression assertion | Done | Verified by: suite 164/164, and the prod run before the fix showing every other field correct | Next: Phase 4 close-or-continue decision stands
 2026-07-27 | Crypto support removed end to end: fetch path, symbol detection, BTC/ETH chips, the no-fundamentals branch, the Binance stub, the BTC fixture and five assertions, plus every doc mention — the just-added METHODOLOGY asymmetry paragraph went with it | Done | Verified by: repo-wide sweep for crypto/binance/usdt returns nothing outside PLAN history, suite 163/163, count synced in all three sites | Next: Phase 4 close-or-continue decision stands
 2026-07-27 | Consistency review of the live feature: lagging-history guard (quote's own previous close must match our last bar), transient network errors keep the last print instead of flashing the stale close, and the crypto forming-day asymmetry stated in METHODOLOGY.md | Done | Verified by: suite 168/168 with the new refusal assertion, real-network run still live (120.50 +4.79% at 11:09 EDT) so the guard passes genuine quotes, count synced in all three sites | Next: the crypto split stays in the Backlog
