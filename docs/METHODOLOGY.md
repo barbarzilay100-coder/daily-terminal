@@ -84,6 +84,15 @@ to mean above the price as it was then, or a 2022 histogram gets sorted against 
 not in the window at all. Whenever the view does not reach the latest bar, the panel names the bar
 the levels are measured against.
 
+**The forming session is shown, never counted.** While the exchange is open, a keyless quote
+endpoint supplies the current session — open, high, low, last and volume — and it is drawn as a
+translucent candle with a live price in the header, refreshed once a minute. It never enters the
+bar series the analysis reads: the score, the levels, the reference close and the percentile all
+keep reading closed bars only, and the levels line says so while the forming bar is on screen. A
+bar that can still change must not be graded against bars that cannot, and an intraday print is
+exactly such a bar. When the quote fails or the market is closed, the page simply shows the last
+close, which is what it always did.
+
 ## Triggers, and why each indicator has exactly one job
 
 Four moving averages and an RSI are all functions of the same close series, so treating each

@@ -75,6 +75,8 @@
   .q-px{font-size:24px; font-weight:500; font-family:var(--f-mono);
         font-variant-numeric:tabular-nums; letter-spacing:-.5px}
   .q-ch{font-size:13px; font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+  .q-live{font-size:11px; color:var(--dim); font-family:var(--f-mono);
+          text-transform:uppercase; letter-spacing:.08em}
   .pos{color:var(--up)} .neg{color:var(--down)}
 
   .legend{
@@ -225,6 +227,7 @@
     <span class="q-sym" id="qsym">—</span>
     <span class="q-px"  id="qpx">—</span>
     <span class="q-ch"  id="qch"></span>
+    <span class="q-live" id="qlive"></span>
   </div>
 </header>
 
@@ -609,6 +612,8 @@ window.addEventListener('resize', () => setTimeout(() => { sizePanes(); renderLe
 /* ──────────────────────────── state ──────────────────────────── */
 
 let BARS = [];
+/* the forming session, when there is one: chart + header only, never analysis */
+let LIVE_BAR = null, liveTimer = null, CUR_SYM = '';
 let IND  = null;          // every indicator series, aligned to BARS by index
 let TECH = null;          // the technical read, published for the fundamental layer
 let priceLines = [];
@@ -678,7 +683,11 @@ function fmt(n){
 }
 
 function paintQuote(sym){
-  const last = BARS[BARS.length-1], prev = BARS[BARS.length-2];
+  CUR_SYM = sym;
+  const closed = BARS[BARS.length-1];
+  /* with a forming bar the change is measured against the last CLOSE, which is
+     what every quote screen means by "change today" */
+  const last = LIVE_BAR || closed, prev = LIVE_BAR ? closed : BARS[BARS.length-2];
   const el = $('qch');
   $('qsym').textContent = sym;
   $('qpx').textContent  = fmt(last.c);
@@ -689,6 +698,11 @@ function paintQuote(sym){
   } else {
     el.textContent = ''; el.className = 'q-ch';
   }
+  /* "live" only while the exchange says open; a fresh bar after the close is a
+     finished session the daily history endpoint has not published yet */
+  $('qlive').textContent = LIVE_BAR
+    ? (LIVE_BAR.open ? 'live' : 'today') + (LIVE_BAR.u ? ' · ' + LIVE_BAR.u : '')
+    : '';
 }
 
 function paintSeries(){
@@ -720,6 +734,64 @@ function paintSeries(){
 
   rsiSeries.setData(IND.rsi.map((v,i) => v == null ? null : ({ time:t[i], value:v })).filter(Boolean));
   rsiMaSeries.setData(IND.rsiMa.map((v,i) => v == null ? null : ({ time:t[i], value:v })).filter(Boolean));
+}
+
+/* ─────────────────── live quote: display only ───────────────────
+   The forming bar goes to the chart and the header, never into BARS. The score,
+   the levels and the percentile keep reading closed bars only — the methodology's
+   central promise — and merging it would also have graded a bar that can still
+   change against bars that cannot. */
+
+async function fetchQuote(sym){
+  const r = await fetch(`https://api.stockanalysis.com/api/quotes/s/${encodeURIComponent(sym.toLowerCase())}`);
+  if (!r.ok) return null;
+  const j = await r.json();
+  return j && j.data ? j.data : null;
+}
+
+function applyQuote(q){
+  LIVE_BAR = null;
+  /* strictly newer than the last closed bar: the same day means the daily history
+     already has it, and drawing it again would double the candle */
+  if (q && q.td && BARS.length && q.td > BARS[BARS.length-1].t
+      && [q.o, q.h, q.l, q.p].every(v => isFinite(+v)))
+    LIVE_BAR = { t:q.td, o:+q.o, h:+q.h, l:+q.l, c:+q.p, v:+q.v || 0,
+                 u:q.u || '', open:q.ms === 'open' };
+  paintLive();
+}
+
+function paintLive(){
+  if (!BARS.length) return;
+  if (LIVE_BAR){
+    /* half-opacity versions of the series colours: the ghost look is the marker
+       that this candle is provisional — nothing else on the chart is translucent */
+    const body = LIVE_BAR.c >= LIVE_BAR.o ? '#4e9e7e80' : '#c06a5c80';
+    candles.update({ time:LIVE_BAR.t, open:LIVE_BAR.o, high:LIVE_BAR.h,
+                     low:LIVE_BAR.l, close:LIVE_BAR.c, color:body, wickColor:body });
+    volSeries.update({ time:LIVE_BAR.t, value:LIVE_BAR.v,
+                       color: LIVE_BAR.c >= BARS[BARS.length-1].c ? '#4e9e7e33' : '#c06a5c33' });
+  } else {
+    paintSeries();   // setData drops any provisional point
+  }
+  if (CUR_SYM) paintQuote(CUR_SYM);
+  renderLevels();    // its "not counted" note keys off LIVE_BAR
+}
+
+function startLive(sym, ticket){
+  const tick = async () => {
+    let q = null;
+    try { q = await fetchQuote(sym); } catch (e){ /* offline: behave as before */ }
+    if (ticket !== LOAD_ID) return;              // superseded mid-flight
+    applyQuote(q);
+    /* keep polling only while the exchange is open; a closed market cannot move */
+    if (q && q.ms === 'open') liveTimer = setTimeout(tick, 60000);
+  };
+  tick();
+}
+
+function stopLive(){
+  if (liveTimer){ clearTimeout(liveTimer); liveTimer = null; }
+  LIVE_BAR = null;
 }
 
 /* ───────────────────── levels: draw + report ───────────────────── */
@@ -812,7 +884,9 @@ function renderLevels(){
 
   $('lv-win').textContent =
     `${fmtDate(win[0].t)} to ${fmtDate(anchor.t)} · ${win.length} bars · ${nodes.length} clusters found`
-    + (live ? '' : ` · measured against the ${fmtDate(anchor.t)} close of ${fmt(price)}, the last bar in view`);
+    + (live
+        ? (LIVE_BAR ? ` · measured against the ${fmtDate(anchor.t)} close — the forming bar is not counted` : '')
+        : ` · measured against the ${fmtDate(anchor.t)} close of ${fmt(price)}, the last bar in view`);
 
   const html = [];
 
@@ -877,6 +951,8 @@ function renderLevels(){
     + 'where price tends to travel fastest. Barriers are one defensible reading, not the only one. '
     + 'Levels and the break are computed on whatever range you are looking at, measured against the '
     + 'close of the last bar in view, so they move when you zoom. '
+    + 'While the exchange is open, the header price and the last candle are the forming session, '
+    + 'drawn translucent and refreshed each minute; every computed number still reads closed bars only. '
     + `The score does not. It always uses a fixed ${PROFILE_LOOKBACK}-bar window. `
     + 'The percentile compares today with every bar that came before it in this asset only. It says '
     + '"unusual for this name", never "good in absolute terms", and each past score was computed against '
@@ -1501,6 +1577,7 @@ async function renderFundamental(sym, ticket){
    Nothing on screen may outlive the symbol it describes. */
 function resetView(){
   BARS = []; IND = null; TECH = null;
+  stopLive(); $('qlive').textContent = '';
   clearLines();
   markers.setMarkers([]); brkMarkers.setMarkers([]);
   candles.setData([]); volSeries.setData([]); rsiSeries.setData([]); rsiMaSeries.setData([]);
@@ -1533,6 +1610,8 @@ async function load(sym){
     renderAssessment();   // fixed windows: once per symbol, not per zoom
     renderLevels();       // view-dependent: re-runs on every range change
     renderFundamental(sym, ticket);   // async, paints when its sources answer
+    /* Binance klines already include the forming day, so crypto needs no quote */
+    if (!isCrypto(sym)) startLive(sym, ticket);
   } catch (e){
     if (ticket !== LOAD_ID) return;
     resetView();

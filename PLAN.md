@@ -31,6 +31,7 @@ entirely, and on multi-year windows zooming out barely moves the levels.
 - [x] Bring the README's level description current with the 27 Jul maths — Done when: age weighting, the decay consequence and volatility-scaled separation appear in the levels paragraph with their reasons, and no claim contradicts `index.html`
 - [x] Worked example: read one screen — Done when: a short README section walks the ORCL screenshot from chart to verdict, arguing why each element earns its place rather than listing it
 - [x] Regenerate both README screenshots (found stale mid-task) — Done when: the images show the post-27-Jul rules and levels at the original 2x dimensions
+- [x] Live session display: live header price + forming candle, analysis untouched — Done when: the quote refreshes each minute while the market is open, the forming bar never enters BARS, the levels line says it is not counted, and the suite covers both the live path and the caught-up no-op
 
 ## Deadlines
 
@@ -38,8 +39,14 @@ None set.
 
 ## Backlog
 
-Empty. Swept 2026-07-27 at the Phase 4 opening: `flagsAt()` deleted, the HVN limitation added
-to METHODOLOGY.md, and the Verdict-rail whitespace line removed as a duplicate of REVIEW.md's P4.
+- Crypto asymmetry with the new live-bar rule: Binance klines include the forming day and it
+  goes straight into BARS, so for crypto the forming bar IS counted by the score and the levels,
+  unlike stocks. Existing behaviour, predates the live feature. Either split it out the same way
+  (moves the BTC test baselines) or state the asymmetry in METHODOLOGY.md.
+
+(Otherwise empty — swept 2026-07-27 at the Phase 4 opening: `flagsAt()` deleted, the HVN
+limitation added to METHODOLOGY.md, and the Verdict-rail whitespace line removed as a duplicate
+of REVIEW.md's P4.)
 
 ## Blockers & Open Questions
 
@@ -47,6 +54,7 @@ None.
 
 ## Session Log
 
+2026-07-27 | Live session display: keyless quote endpoint feeds a live header price and a translucent forming candle, refreshed per minute while the exchange is open; analysis stays on closed bars | Done | Verified by: suite 167/167 (7 new assertions: live path + caught-up no-op), and a real-network run during the open session showed ORCL live at 120.75 +5.00% with levels still measured against the 24 Jul close and the "not counted" note on screen; assertion count synced in all three quote sites | Next: the crypto forming-kline asymmetry sits in the Backlog
 2026-07-27 | Worked example added to the README, and both screenshots regenerated after they turned out to show the pre-27-Jul rules | Done | Verified by: every number in the new section read off the freshly captured panels (score 2/7, R1 124.35 +8.1%, R2 131.12 +14.0%, percentiles 30/26, verdict 5/8), images match the original 2x dimensions, suite 160/160 | Next: decide whether Phase 4 needs more or closes
 2026-07-27 | Backlog sweep + Phase 4 opened: deleted dead flagsAt(), added the HVN-as-magnet limit to METHODOLOGY.md, synced the README's level maths (age decay, volatility-scaled separation) | Done | Verified by: suite 160/160 after the code deletion, every new README claim traced to a constant or the method note in index.html, assertion count unchanged so the three quote sites stay correct | Next: the worked-example README section
 2026-07-27 | Sync METHODOLOGY.md with the new scoring and level rules | Done | Verified by: the four contradicting claims corrected plus a fifth found on the full re-read (the exit rule is ungated, but the arrow now needs an open entry), and every bolded threshold in the document mapped back to a constant in index.html | Next: the two cosmetic P4s remain

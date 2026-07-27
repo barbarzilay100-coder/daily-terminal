@@ -132,7 +132,7 @@ click away.
 | Bad-but-measurable values fail explicitly instead of dropping out of the denominator | Knowing that a lenient `n/a` flatters a score, and that a negative PEG satisfies `< 2` |
 | Sector applicability recovered from SEC SIC codes when the primary source lacks it | Working with primary regulatory sources |
 | GARP scorecard shared with the companion project, same thresholds | Financial statement analysis |
-| 160-assertion end-to-end suite over recorded API fixtures, on a frozen clock in a pinned timezone | Testing and verification discipline, including the test that decays on its own |
+| 167-assertion end-to-end suite over recorded API fixtures, on a frozen clock in a pinned timezone | Testing and verification discipline, including the test that decays on its own |
 
 ## How it works
 
@@ -141,6 +141,12 @@ Everything is computed in the browser. There is no pipeline and no stored state.
 **Prices.** `api.stockanalysis.com`, five years of daily OHLCV, keyless and CORS-open. The
 chart opens on about seven months, which is as many daily candles as fit on one screen while
 staying readable, and keeps the rest for zooming out.
+
+**The live session.** While the exchange is open, the same source's quote endpoint supplies the
+forming session, refreshed once a minute: the header price goes live and today's candle is drawn
+translucent on the chart. It is display only — the score, the levels and the percentile keep
+reading closed bars, and the levels line says the forming bar is not counted while it is on
+screen. If the quote fails, the page shows the last close, which is what it always did.
 
 **Indicators.** Computed in `index.html`: SMA, EMA seeded from a simple average, Wilder RSI
 (the same smoothing TradingView uses), and the volume-by-price histogram. The chart library is
@@ -169,7 +175,7 @@ npx playwright install chromium
 node tests/e2e.cjs
 ```
 
-160 assertions against recorded API responses, so the suite needs no network and does not change
+167 assertions against recorded API responses, so the suite needs no network and does not change
 as markets move. The clock is frozen to the recording date as well, because the staleness guard
 reads `Date.now()`: with a live clock the fixtures rot, and the suite would start failing about a
 month after recording with the source untouched. A test that decays on its own is worse than no

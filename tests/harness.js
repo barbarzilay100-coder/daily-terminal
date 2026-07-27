@@ -75,6 +75,7 @@ const STUB = `<script>
   window.addEventListener('load', () => setTimeout(() => { try {
     const get = (n, f) => Object.defineProperty(window, n, { get:f, configurable:true });
     get('__BARS', ()=>BARS); get('__IND', ()=>IND); get('__TECH', ()=>TECH);
+    get('__LIVE_BAR', ()=>LIVE_BAR);
     get('__lines', ()=>priceLines); get('__fundCache', ()=>fundCache);
     Object.assign(window, {
       __chart:chart, __markers:markers, __brkMarkers:brkMarkers,
@@ -90,7 +91,7 @@ const STUB = `<script>
       __PROFILE_LOOKBACK:PROFILE_LOOKBACK, __FRESH_DAYS:FRESH_DAYS, __MAX_CHASE_PCT:MAX_CHASE_PCT,
       __FRESH_PRICE_DAYS:FRESH_PRICE_DAYS, __FRESH_STMT_DAYS:FRESH_STMT_DAYS,
       __RSI_LO:RSI_LO, __RSI_HI:RSI_HI,
-      __setBARS:v => { BARS = v; }, __paintSeries:paintSeries,
+      __setBARS:v => { BARS = v; }, __paintSeries:paintSeries, __applyQuote:applyQuote,
       __load:load, __renderAssessment:renderAssessment, __renderLevels:renderLevels,
       __setUnivMeta:m => { UNIV_META = m; }, __getUnivMeta:() => UNIV_META,
       __clearFundCache:() => { for (const k in fundCache) delete fundCache[k]; },

@@ -128,6 +128,49 @@ server.listen(PORT, () => {
      /^-5\.05 \(-4\.21%\)$/.test(await pg.evaluate(()=>document.getElementById('qch').textContent)),
      await pg.evaluate(()=>document.getElementById('qch').textContent));
 
+  /* ═══ the forming bar is display only — the analysis never sees it ═══
+     applyQuote is driven directly rather than through a fixture: ORCL has no quote
+     fixture on purpose, so every other assertion keeps running with no live bar. */
+  const LQ = await pg.evaluate(async ()=>{
+    const before = { tech: JSON.stringify(window.__TECH), n: window.__BARS.length };
+    window.__applyQuote({ td:'2026-07-27', o:118, h:121.99, l:116.8, p:120.46,
+                          v:12445350, ms:'open', u:'Jul 27, 2026, 10:52 AM EDT' });
+    await window.__stable();
+    return { before,
+      qpx:   document.getElementById('qpx').textContent,
+      qch:   document.getElementById('qch').textContent,
+      qlive: document.getElementById('qlive').textContent,
+      lvwin: document.getElementById('lv-win').textContent,
+      liveBar: window.__LIVE_BAR ? window.__LIVE_BAR.t : null,
+      after: { tech: JSON.stringify(window.__TECH), n: window.__BARS.length,
+               last: window.__BARS[window.__BARS.length-1].t } };
+  });
+  ck('live quote: the header price is the live one', LQ.qpx==='120.46', LQ.qpx);
+  ck('live quote: change is measured against the last close',
+     /^\+5\.47 \(\+4\.76%\)$/.test(LQ.qch), LQ.qch);
+  ck('live quote: marked live, with the source timestamp',
+     /^live/.test(LQ.qlive) && /10:52/.test(LQ.qlive), LQ.qlive);
+  ck('live quote: BARS still end on the closed bar',
+     LQ.liveBar==='2026-07-27' && LQ.after.last==='2026-07-24' && LQ.after.n===LQ.before.n,
+     [LQ.liveBar, LQ.after]);
+  ck('live quote: the technical score never saw the forming bar',
+     LQ.after.tech===LQ.before.tech);
+  ck('live quote: the levels line says the forming bar is not counted',
+     /forming bar is not counted/.test(LQ.lvwin), LQ.lvwin);
+
+  /* a quote for a day the history already has must be a no-op, or the candle
+     would be drawn twice the moment the daily endpoint catches up */
+  const LQ2 = await pg.evaluate(async ()=>{
+    window.__applyQuote({ td:'2026-07-24', o:122.47, h:123.08, l:114.75, p:114.99,
+                          v:44859923, ms:'closed', u:'Jul 24, 2026, 4:00 PM EDT' });
+    await window.__stable();
+    return { liveBar: window.__LIVE_BAR,
+             qpx: document.getElementById('qpx').textContent,
+             qlive: document.getElementById('qlive').textContent };
+  });
+  ck('a quote for a bar the history already has is a no-op',
+     LQ2.liveBar===null && LQ2.qpx==='114.99' && LQ2.qlive==='', LQ2);
+
   /* Zoom all the way out for the 5Y golden checks, and wait for the FULL window to
      be the one on screen. Waiting merely for "the text changed" catches an
      intermediate range mid-animation and measures the golden levels on the wrong
