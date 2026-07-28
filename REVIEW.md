@@ -11,16 +11,8 @@ a portfolio piece that convinces a recruiter for junior finance roles in Israel.
 
 ## Queue (ordered by priority)
 
-Empty. The queue closed with Phase 4 on 27 Jul 2026.
-
-## Closed without action (Phase 4 close, 27 Jul 2026)
-
-- P4 — Blank space on the chart's left after a window resize. Mechanism known and recorded in
-  LESSONS.md (Lightweight Charts preserves bar spacing, not bar count; `fixLeftEdge` costs the
-  newest bar and was reverted). Never seen on a first impression — only after a deliberate
-  resize, and it self-corrects on any scroll or zoom. Accepted as a known cosmetic limit.
-- P4 — Whitespace under the Verdict rail. Honest whitespace, chosen over a stretched empty
-  card. Accepted as-is.
+Empty. The queue closed with Phase 4 on 27 Jul 2026; the two remaining cosmetic P4s were
+accepted as known limits — the analysis behind the resize one lives in LESSONS.md.
 
 ## Done
 

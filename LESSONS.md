@@ -7,6 +7,13 @@
 
 ## Lessons
 
+### Closed means deleted, not memorialised
+2026-07-27. Bar's correction at the project close: do not add paragraphs for their own sake,
+and when an idea is closed, delete its mentions rather than leaving a record of the record.
+A "Closed without action" section restating what LESSONS already holds was exactly that, and
+so was repeatedly re-offering a declined README idea in session summaries. The queue says
+"empty"; the reasoning lives in one place only.
+
 ### A weighting change can delete a level outright, and a "do not touch" baseline can be legitimately invalidated by it
 2026-07-27. Adding time decay to the volume profile (half-life 126 bars) removed ORCL's 2022
 support at 104.71 from every window: at roughly seven half-lives it carries under 1% of a
