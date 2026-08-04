@@ -26,30 +26,6 @@ its own limits — no invented levels, no look-ahead, explicit "not applicable" 
 a silent zero. Live and public on GitHub Pages, openable from a CV link with no sign-up
 and no API key.
 
-## Stack & Technologies
-
-- One self-contained `index.html` — vanilla JS, no build step, no framework
-- [Lightweight Charts](https://github.com/tradingview/lightweight-charts) 5.2.0 from unpkg, pinned with an SRI hash
-- Google Fonts: Archivo (display, variable width axis) + IBM Plex Mono (figures)
-- Playwright + headless Chromium for the e2e suite
-- GitHub Actions for tests, GitHub Pages for hosting
-
-## Project Structure
-
-```
-index.html               the entire app — markup, styles, logic
-docs/
-  METHODOLOGY.md         how the levels and the score are defined
-  screenshot*.png        README images, regenerated at 2x from the harness build (fixtures +
-                         frozen clock), so they always show the state the README's worked
-                         example describes, regardless of when they are captured
-tests/
-  e2e.cjs                the suite: boots index.html against fixtures
-  harness.js             offline build + the window.__* test hooks
-  fixtures/data/         recorded real API responses — DO NOT re-record casually
-.github/workflows/test.yml
-```
-
 ## Commands
 
 ```bash
